@@ -1,12 +1,12 @@
 import { User } from "firebase/auth";
 import { Link, useLocation } from "wouter";
 import { signOut } from "@/lib/firebase";
-import { useTheme } from "@/lib/hooks";
+import { useTheme, useAdmin } from "@/lib/hooks";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Home, BookOpen, Trophy, History, Settings, LogOut } from "lucide-react";
+import { Home, BookOpen, Trophy, History, Settings, LogOut, ShieldAlert } from "lucide-react";
 
 interface NavItem {
   label: string;
@@ -28,6 +28,7 @@ export function DesktopSidebar({
   const [location] = useLocation();
   const { toggleTheme } = useTheme();
   const { toast } = useToast();
+  const { isAdmin, loading: adminLoading } = useAdmin();
 
   const navItems: NavItem[] = [
     { label: "Dashboard", href: "/", icon: <Home className="w-5 text-center" /> },
@@ -101,6 +102,21 @@ export function DesktopSidebar({
               <span>{item.label}</span>
             </Link>
           ))}
+
+          {/* Admin Button - only visible for admin users */}
+          {isAdmin && (
+            <Link 
+              href="/admin"
+              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg ${
+                location === "/admin" 
+                  ? "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 font-medium" 
+                  : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+              }`}
+            >
+              <ShieldAlert className="w-5 text-center text-red-600 dark:text-red-400" />
+              <span className="font-medium">Admin Dashboard</span>
+            </Link>
+          )}
         </div>
       </div>
 

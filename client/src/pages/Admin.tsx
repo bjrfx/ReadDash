@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAdmin, useAuth } from "@/lib/hooks";
 import { MobileHeader } from "@/components/layout/MobileHeader";
+import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { AdminHeader } from "@/components/admin/AdminHeader";
 import { UsersList } from "@/components/admin/UsersList";
@@ -354,26 +355,27 @@ export default function Admin() {
     <>
       <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
       <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileNavBar currentRoute="/admin" />
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
         <div className="p-4 sm:p-6">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button 
                 variant="outline" 
                 onClick={createTestUsers}
                 className="flex items-center gap-1"
               >
                 <UserPlus className="h-4 w-4" />
-                Create Test Users
+                <span>Create Test Users</span>
               </Button>
               <Button 
                 onClick={handleAddQuiz}
                 className="flex items-center gap-1"
               >
                 <PlusCircle className="h-4 w-4" />
-                Add New Quiz
+                <span>Add New Quiz</span>
               </Button>
             </div>
           </div>

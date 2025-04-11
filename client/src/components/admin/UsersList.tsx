@@ -58,13 +58,13 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
   return (
     <Card className="mb-6 overflow-hidden">
       <CardHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex justify-between items-center">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
           <h3 className="font-heading text-lg font-medium">User Management</h3>
-          <div className="relative">
+          <div className="relative w-full sm:w-auto">
             <Input
               type="text"
               placeholder="Search users..."
-              className="pl-9 pr-4 py-2 w-64"
+              className="pl-9 pr-4 py-2 w-full sm:w-64"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

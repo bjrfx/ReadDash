@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAdmin, useAuth } from "@/lib/hooks";
 import { MobileHeader } from "@/components/layout/MobileHeader";
+import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -237,6 +238,7 @@ export default function UserView() {
     <>
       <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
       <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileNavBar currentRoute="/admin" />
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
         <div className="p-4 sm:p-6">
