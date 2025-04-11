@@ -17,6 +17,7 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
 import { useEffect } from "react";
 import { handleRedirectResult } from "./lib/firebase";
+import CookieConsent from "@/components/ui/cookie-consent/CookieConsent";
 
 function Router() {
   return (
@@ -128,6 +129,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router />
+      <CookieConsent />
       <Toaster />
     </QueryClientProvider>
   );
