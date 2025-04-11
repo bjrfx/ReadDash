@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EyeIcon, PencilIcon, Search } from "lucide-react";
 
 interface User {
@@ -26,7 +27,7 @@ interface UsersListProps {
 export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const usersPerPage = 10;
+  const [usersPerPage, setUsersPerPage] = useState(10);
   
   // Filter users based on search query
   const filteredUsers = users.filter(user => {
@@ -161,8 +162,8 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
         </table>
       </div>
       
-      <CardContent className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
-        <div>
+      <CardContent className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             Showing <span className="font-medium">{filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0}</span> to{" "}
             <span className="font-medium">
@@ -170,7 +171,30 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
             </span>{" "}
             of <span className="font-medium">{filteredUsers.length}</span> users
           </p>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-gray-700 dark:text-gray-300">Show</span>
+            <Select
+              value={usersPerPage.toString()}
+              onValueChange={(value) => {
+                setUsersPerPage(parseInt(value));
+                setCurrentPage(1); // Reset to first page when changing entries per page
+              }}
+            >
+              <SelectTrigger className="h-8 w-[70px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5</SelectItem>
+                <SelectItem value="10">10</SelectItem>
+                <SelectItem value="20">20</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+              </SelectContent>
+            </Select>
+            <span className="text-sm text-gray-700 dark:text-gray-300">entries</span>
+          </div>
         </div>
+        
         <div className="flex space-x-1">
           <Button 
             variant="outline" 
