@@ -1,0 +1,44 @@
+Build a fully responsive and modern reading comprehension web application (like ReadTheory) using React with Vite and shadcn/ui for the frontend, optimized for mobile devices with a PWA setup to provide a real mobile app-like experience.
+My app name is ReadDash
+🧠 Core Features:
+	•	User Authentication: Sign in with Google using Firebase Authentication.
+	•	User Dashboard:
+	•	Track user progress: quizzes taken, scores, reading level (Lexile-style), knowledge points.
+	•	Fun, engaging design with gamification badges, points, and progress bars.
+	•	Mobile-first experience with swipeable cards and transitions.
+
+📚 Reading Quizzes:
+	•	Dynamically generate reading passages with questions and answers using Gemini API.
+	•	Each passage should include a title, paragraph, multiple-choice questions, and correct answers.
+	•	After quiz submission, show instant feedback and track progress in Firebase Firestore.
+
+🧑‍💼 Admin Panel (separate route like /admin):
+	•	Secure with role-based access (only admins allowed).
+	•	View all users and their quiz history.
+	•	Manually add/edit/delete passages and questions.
+	•	Dashboard for monitoring activity and engagement stats.
+
+🌟 UI/UX:
+	•	Use shadcn/ui for sleek, modern, and highly usable components.
+	•	Include progress charts, score indicators, tabs, cards, toast notifications, and gamified feedback.
+	•	Light/dark mode switcher, responsive layout.
+
+💾 Backend/Data:
+	•	Use Firebase Firestore to store:
+	•	Users and authentication
+	•	Reading passages
+	•	Quiz data and user progress
+	•	Use Gemini API (or mock it) to auto-generate content.
+
+📱 PWA (Progressive Web App):
+	•	Enable full PWA support for offline caching, installable on mobile devices.
+	•	Add service workers and manifest for home screen installation.
+
+🧩 Tech Stack:
+	•	React + Vite
+	•	shadcn/ui + Tailwind CSS
+	•	Firebase Auth + Firestore
+	•	Gemini API (for content generation)
+	•	PWA support
+
+Please ensure the app has a beautiful, intuitive UI/UX, with an engaging learning experience similar to ReadTheory, and that it’s fully optimized for mobile usage.
