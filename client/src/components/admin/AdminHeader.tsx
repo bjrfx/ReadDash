@@ -1,6 +1,5 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Users, BookOpen, GraduationCap, AlertCircle, Plus } from "lucide-react";
+import { Users, BookOpen, GraduationCap, AlertCircle } from "lucide-react";
 
 interface AdminStats {
   activeUsers: number;
@@ -15,20 +14,11 @@ interface AdminStats {
 
 interface AdminHeaderProps {
   stats: AdminStats;
-  onAddQuiz: () => void;
 }
 
-export function AdminHeader({ stats, onAddQuiz }: AdminHeaderProps) {
+export function AdminHeader({ stats }: AdminHeaderProps) {
   return (
     <div className="mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="font-heading text-2xl font-bold">Admin Dashboard</h2>
-        <Button onClick={onAddQuiz}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add New Quiz
-        </Button>
-      </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Active Users Card */}
         <Card>

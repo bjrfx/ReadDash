@@ -10,7 +10,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { GenerateQuizRequest } from "@/lib/gemini";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2, UserPlus, PlusCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, doc, deleteDoc, query, where, orderBy, limit, addDoc, Timestamp } from "firebase/firestore";
 import { Button } from "@/components/ui/button";
@@ -218,7 +218,7 @@ export default function Admin() {
       
       const testUsers = [
         {
-          name: "Sarah Johnson",
+          displayName: "Sarah Johnson",
           email: "sarah.j@example.com",
           photoURL: "",
           createdAt: Timestamp.fromDate(new Date("2024-01-15")),
@@ -231,7 +231,7 @@ export default function Admin() {
           levelCategory: "Intermediate"
         },
         {
-          name: "Mike Davidson",
+          displayName: "Mike Davidson",
           email: "mike.d@example.com",
           photoURL: "",
           createdAt: Timestamp.fromDate(new Date("2024-02-22")),
@@ -244,7 +244,7 @@ export default function Admin() {
           levelCategory: "Advanced"
         },
         {
-          name: "Emma Wilson",
+          displayName: "Emma Wilson",
           email: "emma.w@example.com",
           photoURL: "",
           createdAt: Timestamp.fromDate(new Date("2024-03-10")),
@@ -257,7 +257,7 @@ export default function Admin() {
           levelCategory: "Basic"
         },
         {
-          name: "Alex Nguyen",
+          displayName: "Alex Nguyen",
           email: "alex.n@example.com",
           photoURL: "",
           createdAt: Timestamp.fromDate(new Date("2024-04-01")),
@@ -359,17 +359,26 @@ export default function Admin() {
         <div className="p-4 sm:p-6">
           <div className="flex justify-between items-center mb-6">
             <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-            <Button 
-              variant="outline" 
-              onClick={createTestUsers}
-              className="flex items-center gap-1"
-            >
-              <UserPlus className="h-4 w-4" />
-              Create Test Users
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={createTestUsers}
+                className="flex items-center gap-1"
+              >
+                <UserPlus className="h-4 w-4" />
+                Create Test Users
+              </Button>
+              <Button 
+                onClick={handleAddQuiz}
+                className="flex items-center gap-1"
+              >
+                <PlusCircle className="h-4 w-4" />
+                Add New Quiz
+              </Button>
+            </div>
           </div>
           
-          <AdminHeader stats={stats} onAddQuiz={handleAddQuiz} />
+          <AdminHeader stats={stats} />
           
           <UsersList 
             users={userData} 
