@@ -44,6 +44,17 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   
+  // Add console logging to help debug
+  const handleViewClick = (userId: string) => {
+    console.log('View user clicked:', userId);
+    onViewUser(userId);
+  };
+  
+  const handleEditClick = (userId: string) => {
+    console.log('Edit user clicked:', userId);
+    onEditUser(userId);
+  };
+  
   return (
     <Card className="mb-6 overflow-hidden">
       <CardHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
@@ -130,7 +141,7 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                      onClick={() => onViewUser(user.id)}
+                      onClick={() => handleViewClick(user.id)}
                     >
                       <EyeIcon className="h-4 w-4" />
                     </Button>
@@ -138,7 +149,7 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
                       variant="ghost" 
                       size="sm" 
                       className="h-8 w-8 p-0 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300"
-                      onClick={() => onEditUser(user.id)}
+                      onClick={() => handleEditClick(user.id)}
                     >
                       <PencilIcon className="h-4 w-4" />
                     </Button>
@@ -153,7 +164,7 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
       <CardContent className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <div>
           <p className="text-sm text-gray-700 dark:text-gray-300">
-            Showing <span className="font-medium">{indexOfFirstUser + 1}</span> to{" "}
+            Showing <span className="font-medium">{filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0}</span> to{" "}
             <span className="font-medium">
               {indexOfLastUser > filteredUsers.length ? filteredUsers.length : indexOfLastUser}
             </span>{" "}

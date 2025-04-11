@@ -9,6 +9,8 @@ import Quiz from "@/pages/Quiz";
 import QuizResults from "@/pages/QuizResults";
 import Achievements from "@/pages/Achievements";
 import Admin from "@/pages/Admin";
+import UserView from "@/pages/admin/UserView";
+import UserEdit from "@/pages/admin/UserEdit";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Quizzes from "@/pages/Quizzes";
@@ -76,14 +78,14 @@ function Router() {
       <Route path="/admin/users/:id">
         {params => (
           <RequireAdmin>
-            <Admin />
+            <UserView />
           </RequireAdmin>
         )}
       </Route>
       <Route path="/admin/users/:id/edit">
         {params => (
           <RequireAdmin>
-            <Admin />
+            <UserEdit />
           </RequireAdmin>
         )}
       </Route>
