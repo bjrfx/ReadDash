@@ -11,12 +11,23 @@ import { Badge } from "@/components/ui/badge";
 import { 
   User, ArrowLeft, BookOpen, TrendingUp, Award, 
   Calendar, Clock, Mail, CheckCircle, BarChart, 
-  Edit, AlertTriangle
+  Edit, AlertTriangle, ExternalLink
 } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function UserView() {
   const params = useParams();
@@ -30,6 +41,7 @@ export default function UserView() {
   const [userQuizzes, setUserQuizzes] = useState([]);
   const [userAchievements, setUserAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [indexCreationNeeded, setIndexCreationNeeded] = useState(null);
   
   useEffect(() => {
     const fetchUserData = async () => {
@@ -62,46 +74,110 @@ export default function UserView() {
           
           setUserData(user);
           
-          // Fetch user's quizzes
-          const quizzesQuery = query(
-            collection(db, "quizResults"), 
-            where("userId", "==", userId),
-            orderBy("completedAt", "desc"),
-            limit(10)
-          );
+          try {
+            // Try to fetch user's quizzes with a complex query
+            const quizzesQuery = query(
+              collection(db, "quizResults"), 
+              where("userId", "==", userId),
+              orderBy("completedAt", "desc"),
+              limit(10)
+            );
+            
+            const quizzesSnapshot = await getDocs(quizzesQuery);
+            const quizzesData = quizzesSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              completedAt: doc.data().completedAt ? new Date(doc.data().completedAt.toDate()).toLocaleDateString('en-US', {
+                year: 'numeric', 
+                month: 'short',
+                day: 'numeric'
+              }) : 'Unknown'
+            }));
+            
+            setUserQuizzes(quizzesData);
+          } catch (err) {
+            console.error("Error fetching quizzes:", err);
+            // Check if this is an index error
+            if (err.message && err.message.includes("requires an index")) {
+              const indexUrl = err.message.match(/https:\/\/console\.firebase\.google\.com\/[^\s]+/)?.[0];
+              setIndexCreationNeeded(indexUrl);
+              
+              // Just fetch user quizzes without the orderBy, as a fallback
+              try {
+                const simpleQuizzesQuery = query(
+                  collection(db, "quizResults"), 
+                  where("userId", "==", userId),
+                  limit(10)
+                );
+                
+                const quizzesSnapshot = await getDocs(simpleQuizzesQuery);
+                const quizzesData = quizzesSnapshot.docs.map(doc => ({
+                  id: doc.id,
+                  ...doc.data(),
+                  completedAt: doc.data().completedAt ? new Date(doc.data().completedAt.toDate()).toLocaleDateString('en-US', {
+                    year: 'numeric', 
+                    month: 'short',
+                    day: 'numeric'
+                  }) : 'Unknown'
+                }));
+                
+                setUserQuizzes(quizzesData);
+              } catch (fallbackErr) {
+                console.error("Error with fallback quiz fetch:", fallbackErr);
+                setUserQuizzes([]);
+              }
+            } else {
+              setUserQuizzes([]);
+            }
+          }
           
-          const quizzesSnapshot = await getDocs(quizzesQuery);
-          const quizzesData = quizzesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            completedAt: doc.data().completedAt ? new Date(doc.data().completedAt.toDate()).toLocaleDateString('en-US', {
-              year: 'numeric', 
-              month: 'short',
-              day: 'numeric'
-            }) : 'Unknown'
-          }));
-          
-          setUserQuizzes(quizzesData);
-          
-          // Fetch user's achievements
-          const achievementsQuery = query(
-            collection(db, "achievements"), 
-            where("userId", "==", userId),
-            orderBy("earnedAt", "desc")
-          );
-          
-          const achievementsSnapshot = await getDocs(achievementsQuery);
-          const achievementsData = achievementsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data(),
-            earnedAt: doc.data().earnedAt ? new Date(doc.data().earnedAt.toDate()).toLocaleDateString('en-US', {
-              year: 'numeric', 
-              month: 'short',
-              day: 'numeric'
-            }) : 'Unknown'
-          }));
-          
-          setUserAchievements(achievementsData);
+          try {
+            // Try to fetch user's achievements with a complex query
+            const achievementsQuery = query(
+              collection(db, "achievements"), 
+              where("userId", "==", userId),
+              orderBy("earnedAt", "desc")
+            );
+            
+            const achievementsSnapshot = await getDocs(achievementsQuery);
+            const achievementsData = achievementsSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+              earnedAt: doc.data().earnedAt ? new Date(doc.data().earnedAt.toDate()).toLocaleDateString('en-US', {
+                year: 'numeric', 
+                month: 'short',
+                day: 'numeric'
+              }) : 'Unknown'
+            }));
+            
+            setUserAchievements(achievementsData);
+          } catch (err) {
+            console.error("Error fetching achievements:", err);
+            // Just fetch achievements without the orderBy as a fallback
+            try {
+              const simpleAchievementsQuery = query(
+                collection(db, "achievements"), 
+                where("userId", "==", userId),
+                limit(10)
+              );
+              
+              const achievementsSnapshot = await getDocs(simpleAchievementsQuery);
+              const achievementsData = achievementsSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+                earnedAt: doc.data().earnedAt ? new Date(doc.data().earnedAt.toDate()).toLocaleDateString('en-US', {
+                  year: 'numeric', 
+                  month: 'short',
+                  day: 'numeric'
+                }) : 'Unknown'
+              }));
+              
+              setUserAchievements(achievementsData);
+            } catch (fallbackErr) {
+              console.error("Error with fallback achievements fetch:", fallbackErr);
+              setUserAchievements([]);
+            }
+          }
         } else {
           toast({
             title: "User not found",
@@ -185,6 +261,29 @@ export default function UserView() {
               Edit User
             </Button>
           </div>
+          
+          {indexCreationNeeded && (
+            <AlertDialog defaultOpen>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Firestore Index Required</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Some data couldn't be sorted properly because a Firestore index needs to be created. 
+                    Data is still displayed but may not be in the correct order.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="flex flex-col sm:flex-row gap-2">
+                  <AlertDialogCancel>Dismiss</AlertDialogCancel>
+                  <AlertDialogAction asChild>
+                    <a href={indexCreationNeeded} target="_blank" rel="noopener noreferrer" className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90">
+                      Create Index
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </a>
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
           
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* User Profile Card */}
