@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail
 } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -183,19 +183,52 @@ const createOrUpdateUser = async (user: FirebaseUser) => {
       photoURL: user.photoURL || "",
     };
 
-    console.log("Creating or updating user in database:", user.uid);
+    console.log("Creating or updating user in Firestore:", user.uid);
     
-    // Send request to our backend API to create or update user
-    await fetch('/api/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-      credentials: 'include',
-    });
+    // Check if user already exists in Firestore
+    const userDocRef = doc(db, "users", user.uid);
+    const userSnapshot = await getDoc(userDocRef);
+    
+    if (userSnapshot.exists()) {
+      // User exists, update their information
+      await setDoc(userDocRef, {
+        ...userData,
+        lastLogin: serverTimestamp(),
+      }, { merge: true });
+      console.log("User document updated in Firestore");
+    } else {
+      // User doesn't exist, create a new user document
+      await setDoc(userDocRef, {
+        ...userData,
+        createdAt: serverTimestamp(),
+        lastLogin: serverTimestamp(),
+        readingLevel: "5A", // Default starting level
+        knowledgePoints: 0,
+        role: "user",
+        quizzesCompleted: 0,
+        correctPercentage: 0,
+        levelCategory: "Basic"
+      });
+      console.log("New user document created in Firestore");
+    }
+    
+    // Also send request to our backend API for any server-side processing
+    try {
+      await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+        credentials: 'include',
+      });
+    } catch (apiError) {
+      console.error("Error sending user data to API (continuing anyway):", apiError);
+      // Continue even if API request fails - user data is already in Firestore
+    }
   } catch (error) {
-    console.error("Error creating/updating user in database:", error);
+    console.error("Error creating/updating user in Firestore:", error);
+    throw error; // Re-throw to allow calling functions to handle the error
   }
 };
 

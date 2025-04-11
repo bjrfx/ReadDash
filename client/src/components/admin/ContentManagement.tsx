@@ -163,7 +163,7 @@ export function ContentManagement({
                   <SelectValue placeholder="Select level..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Select level...</SelectItem>
+                  <SelectItem value="placeholder" disabled>Select level...</SelectItem>
                   <SelectItem value="5A">Level 5A (Basic)</SelectItem>
                   <SelectItem value="6B">Level 6B (Intermediate)</SelectItem>
                   <SelectItem value="8B">Level 8B (Advanced)</SelectItem>
@@ -183,7 +183,7 @@ export function ContentManagement({
                   <SelectValue placeholder="Select category..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Select category...</SelectItem>
+                  <SelectItem value="placeholder" disabled>Select category...</SelectItem>
                   <SelectItem value="Science">Science</SelectItem>
                   <SelectItem value="History">History</SelectItem>
                   <SelectItem value="Literature">Literature</SelectItem>

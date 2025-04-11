@@ -29,10 +29,14 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
   const usersPerPage = 10;
   
   // Filter users based on search query
-  const filteredUsers = users.filter(user => 
-    user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users.filter(user => {
+    const name = user.displayName || '';
+    const email = user.email || '';
+    const query = searchQuery.toLowerCase();
+    
+    return name.toLowerCase().includes(query) || 
+           email.toLowerCase().includes(query);
+  });
   
   // Calculate pagination
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
@@ -80,27 +84,27 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
                         <img 
                           className="h-10 w-10 rounded-full" 
                           src={user.photoURL} 
-                          alt={`${user.name}'s avatar`}
+                          alt={`${user.displayName || 'User'}'s avatar`}
                         />
                       ) : (
                         <div className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-300 font-medium">
-                          {user.name.charAt(0)}
+                          {(user.displayName || 'U').charAt(0)}
                         </div>
                       )}
                     </div>
                     <div className="ml-4">
-                      <div className="font-medium">{user.name}</div>
+                      <div className="font-medium">{user.displayName || 'Unknown User'}</div>
                       <div className="text-sm text-gray-500 dark:text-gray-400">
-                        Joined: {user.joinDate}
+                        Joined: {user.joinDate || 'Unknown'}
                       </div>
                     </div>
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{user.email}</div>
+                  <div className="text-sm">{user.email || 'No email'}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium">{user.readingLevel}</div>
+                  <div className="text-sm font-medium">{user.readingLevel || 'N/A'}</div>
                   <div className={`text-xs ${
                     user.levelCategory === 'Advanced' 
                       ? 'text-green-600 dark:text-green-400' 
@@ -108,17 +112,17 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
                         ? 'text-yellow-600 dark:text-yellow-400' 
                         : 'text-orange-600 dark:text-orange-400'
                   }`}>
-                    {user.levelCategory}
+                    {user.levelCategory || 'Unclassified'}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm">{user.quizzesCompleted} completed</div>
+                  <div className="text-sm">{user.quizzesCompleted || 0} completed</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {user.correctPercentage}% correct
+                    {user.correctPercentage || 0}% correct
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
-                  {user.lastActive}
+                  {user.lastActive || 'Never'}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm">
                   <div className="flex space-x-2">
