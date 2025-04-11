@@ -88,7 +88,7 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
             {currentUsers.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+              <tr key={user.id} className="border border-input bg-background hover:bg-accent hover:text-accent-foreground">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="h-10 w-10 flex-shrink-0">
@@ -162,7 +162,7 @@ export function UsersList({ users, onViewUser, onEditUser }: UsersListProps) {
         </table>
       </div>
       
-      <CardContent className="px-5 py-3 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+      <CardContent className="px-5 py-3 border-t border border-input bg-background hover:bg-accent hover:text-accent-foreground flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <p className="text-sm text-gray-700 dark:text-gray-300">
             Showing <span className="font-medium">{filteredUsers.length > 0 ? indexOfFirstUser + 1 : 0}</span> to{" "}
