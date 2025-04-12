@@ -1,6 +1,85 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import './styles/animations.css';
+
+:root {
+  --background: 250 33% 98%;
+  --foreground: 222.2 84% 4.9%;
+  
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 84% 4.9%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  
+  --primary: 262 83% 58%;
+  --primary-foreground: 210 40% 98%;
+  
+  --secondary: 199 89% 48%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  
+  --accent: 262 83% 94%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 262 83% 58%;
+  
+  --radius: 0.5rem;
+  
+  --chart-1: 262 83% 58%;
+  --chart-2: 199 89% 48%;
+  --chart-3: 291 70% 50%;
+  --chart-4: 199 89% 70%;
+  --chart-5: 262 60% 40%;
+}
+
+.dark {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  
+  --card: 222.2 84% 9.9%;
+  --card-foreground: 210 40% 98%;
+  
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  
+  --primary: 262 83% 58%;
+  --primary-foreground: 222.2 47.4% 11.2%;
+  
+  --secondary: 199 89% 48%;
+  --secondary-foreground: 210 40% 98%;
+  
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 262 83% 58%;
+  
+  /* Sidebar specific colors for dark mode */
+  --sidebar-background: 260 25% 11%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 262 83% 58%;
+  --sidebar-primary-foreground: 0 0% 100%;
+  --sidebar-accent: 199 89% 48%;
+  --sidebar-accent-foreground: 0 0% 100%;
+  --sidebar-border: 260 25% 16%;
+  --sidebar-ring: 262 83% 58%;
+}
 
 @layer base {
   * {
@@ -8,6 +87,31 @@
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply font-sans antialiased bg-background text-foreground transition-colors duration-300;
+  }
+  
+  /* Enhanced focus styles */
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary ring-offset-2;
+  }
+  
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+  
+  /* Better typography */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-bold tracking-tight;
+  }
+  
+  /* Card enhancements */
+  .card {
+    @apply card-hover-effect;
+  }
+  
+  /* Button enhancements */
+  button, .button {
+    @apply transition-all duration-200;
   }
 }

@@ -121,7 +121,7 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
   };
 
   return (
-    <nav className="hidden sm:flex flex-col fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-5 z-50">
+    <nav className="hidden sm:flex flex-col fixed inset-y-0 left-0 w-64 bg-white dark:bg-sidebar border-r border-gray-200 dark:border-sidebar-border p-5 z-50 shadow-lg transition-all duration-300">
       <div className="flex items-center mb-8">
         <Logo />
         <h1 className="font-heading text-2xl font-bold ml-2.5 tracking-tight">
@@ -159,10 +159,10 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
             <Link 
               key={item.href} 
               href={item.href}
-              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg ${
+              className={`flex items-center space-x-3 px-3 py-2.5 rounded-lg transition-all duration-200 ${
                 location === item.href 
-                  ? "bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300 font-medium" 
-                  : "hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300"
+                  ? "bg-primary-50 dark:bg-sidebar-primary/20 text-primary-700 dark:text-sidebar-primary font-medium shadow-sm" 
+                  : "hover:bg-gray-100 dark:hover:bg-sidebar-accent/10 text-gray-700 dark:text-sidebar-foreground hover:translate-x-1"
               }`}
             >
               {item.icon}
@@ -188,11 +188,11 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
       </div>
 
       <div className="mt-auto">
-        <div className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 mb-5">
+        <div className="bg-gray-100 dark:bg-sidebar-accent/10 rounded-lg p-3 mb-5 backdrop-blur-sm border border-transparent dark:border-sidebar-border/50 shadow-sm">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium">Daily Goal</span>
             <div className="flex items-center">
-              <span className="text-sm text-primary-600 dark:text-primary-400 mr-1">
+              <span className="text-sm text-primary-600 dark:text-sidebar-primary mr-1 font-medium">
                 {dailyGoalProgress}/{dailyGoalTarget}
               </span>
               <TooltipProvider>
@@ -220,7 +220,7 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
           </div>
           <Progress 
             value={(dailyGoalProgress / dailyGoalTarget) * 100} 
-            className="h-2 bg-gray-200 dark:bg-gray-600" 
+            className="h-2 bg-gray-200 dark:bg-gray-600 overflow-hidden glow-primary" 
           />
         </div>
         

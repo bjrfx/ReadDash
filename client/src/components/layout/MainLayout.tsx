@@ -26,7 +26,7 @@ export function MainLayout({
   const userLevel = userData?.readingLevel || "1A";
 
   return (
-    <>
+    <div className="bg-gradient-to-br from-background to-accent/20 min-h-screen">
       <MobileHeader 
         user={user} 
         userLevel={userLevel} 
@@ -38,14 +38,16 @@ export function MainLayout({
         dailyGoalProgress={dailyGoalProgress} 
       />
       
-      <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
-        {children}
+      <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen fade-in">
+        <div className="p-4 sm:p-6">
+          {children}
+        </div>
       </main>
       
       <MobileNavBar currentRoute={currentRoute} />
       
       {/* Daily Goal Dialog - will automatically handle its visibility */}
       {user && <DailyGoalDialog />}
-    </>
+    </div>
   );
 }

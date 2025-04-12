@@ -35,39 +35,41 @@ export function MobileHeader({
   const { toggleTheme } = useTheme();
 
   return (
-    <header className="sm:hidden fixed top-0 inset-x-0 h-16 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 z-50">
+    <header className="sm:hidden fixed top-0 inset-x-0 h-16 border-b border-primary/10 bg-background/80 backdrop-blur-sm z-50 shadow-md transition-all duration-300">
       <div className="flex items-center justify-between h-full px-4">
         <div className="flex items-center space-x-2">
           {user?.photoURL ? (
             <img 
               src={user.photoURL} 
               alt="User avatar" 
-              className="h-8 w-8 rounded-full"
+              className="h-8 w-8 rounded-full ring-2 ring-primary/20 transition-all duration-300 hover:ring-primary/50 hover:scale-110 shadow-sm"
             />
           ) : (
-            <div className="h-8 w-8 rounded-full bg-primary-100 dark:bg-primary-800 flex items-center justify-center text-primary-600 dark:text-primary-300 font-medium">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium ring-2 ring-primary/20 transition-all duration-300 hover:ring-primary/50 hover:scale-110 shadow-sm">
               {user?.displayName?.charAt(0) || "U"}
             </div>
           )}
           <div className="flex items-center">
             <Logo />
             <h1 className="font-heading text-xl font-bold ml-1.5 tracking-tight">
-              <span className="text-purple-600 dark:text-purple-400 font-extrabold">Read</span>
-              <span className="text-teal-600 dark:text-teal-400">Dash</span>
+              <span className="text-primary font-extrabold bg-gradient-to-r from-purple-600 to-purple-400 dark:from-purple-400 dark:to-purple-600 bg-clip-text text-transparent">Read</span>
+              <span className="text-secondary bg-gradient-to-r from-teal-600 to-teal-400 dark:from-teal-400 dark:to-teal-600 bg-clip-text text-transparent">Dash</span>
             </h1>
-            <p className="text-xs text-gray-500 dark:text-gray-400 ml-1.5">
-              Level {userLevel}
-            </p>
+            <div className="ml-1.5 px-2 py-0.5 rounded-full bg-primary/10 hover:bg-primary/20 transition-all duration-300 transform hover:scale-105">
+              <p className="text-xs font-medium text-primary">
+                Level {userLevel}
+              </p>
+            </div>
           </div>
         </div>
         
         <div className="flex items-center space-x-4">
-          <button className="relative">
-            <Bell className="h-5 w-5 text-gray-600 dark:text-gray-300" />
+          <button className="relative transform hover:scale-110 transition-all duration-300">
+            <Bell className="h-5 w-5 text-primary/80 hover:text-primary transition-colors duration-300" />
             {notificationCount > 0 && (
               <Badge 
                 variant="destructive" 
-                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent-500 text-xs text-white"
+                className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-white animate-pulse shadow-glow"
               >
                 {notificationCount}
               </Badge>
