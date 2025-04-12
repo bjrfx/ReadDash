@@ -187,6 +187,8 @@ export default function Dashboard() {
       try {
         console.log("Fetching weekly activity data from Firestore...");
         
+        if (!user?.uid) return defaultWeeklyActivity;
+        
         // Get current date and calculate the start of the week (Monday)
         const today = new Date();
         const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=Mon, 6=Sun
@@ -262,6 +264,8 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         console.log("Fetching real user achievements from Firestore...");
+        
+        if (!user?.uid) return [];
         
         const achievementsRef = collection(db, "achievements");
         const achievementsQuery = query(
@@ -433,6 +437,8 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         console.log("Fetching quiz completion data from Firestore...");
+        if (!user?.uid) return null;
+        
         const quizResultsRef = collection(db, "quizResults");
         const quizQuery = query(
           quizResultsRef,
@@ -682,7 +688,6 @@ export default function Dashboard() {
   // Use real user data for reading level if available, otherwise fallback to default
   const stats = {
     ...defaultStats,
-    ...userStats,
     // Override with real reading level from Firestore if available
     readingLevel: userData?.readingLevel || defaultStats.readingLevel,
     // For previous level, we could implement logic to determine it based on history
@@ -697,8 +702,8 @@ export default function Dashboard() {
   };
   
   // Get reading level progress using real data from Firestore
-  const readingLevels = userStats?.readingLevels || readingLevelData?.readingLevels || defaultReadingLevels;
-  const currentProgress = readingLevelData?.currentProgress || userStats?.currentProgress || 78;
+  const readingLevels = readingLevelData?.readingLevels || defaultReadingLevels;
+  const currentProgress = readingLevelData?.currentProgress || 78;
   
   // For testing: add some data to weeklyActivity if needed
   const testWeeklyData = () => {
@@ -718,8 +723,8 @@ export default function Dashboard() {
     return testData;
   };
   
-  // Prepare quizzes data for the component - use the fetched data if available
-  const quizzesData = recommendedQuizzes?.length > 0 
+  // Prepare quizzes data for the component
+  const quizzesData = Array.isArray(recommendedQuizzes) && recommendedQuizzes.length > 0 
     ? recommendedQuizzes 
     : quizzesLoading ? [] : defaultQuizzes;
 
@@ -739,7 +744,7 @@ export default function Dashboard() {
           />
           
           <AchievementsList 
-            achievements={userAchievements?.length > 0 ? userAchievements : defaultAchievements} 
+            achievements={Array.isArray(userAchievements) && userAchievements.length > 0 ? userAchievements : defaultAchievements} 
             loading={achievementsLoading} 
           />
           
