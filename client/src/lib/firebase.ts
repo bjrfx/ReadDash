@@ -14,7 +14,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail
 } from "firebase/auth";
-import { getFirestore, doc, setDoc, serverTimestamp, getDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc, serverTimestamp, getDoc, collection, query, where, getDocs, writeBatch } from "firebase/firestore";
 
 // Firebase configuration
 const firebaseConfig = {
@@ -352,6 +352,94 @@ export const resetPassword = async (email: string) => {
   } catch (error) {
     const errorObj = error as { code?: string, message?: string };
     console.error("Error sending password reset email:", errorObj.code, errorObj.message);
+    throw error;
+  }
+};
+
+// Reset a specific quiz for a user
+export const resetQuiz = async (userId: string, quizId: string) => {
+  try {
+    console.log(`Resetting quiz ${quizId} for user ${userId}`);
+    
+    // Query for all quiz results for this specific quiz and user
+    const quizResultsRef = collection(db, "quizResults");
+    const q = query(
+      quizResultsRef,
+      where("userId", "==", userId),
+      where("quizId", "==", quizId)
+    );
+    
+    const querySnapshot = await getDocs(q);
+    
+    // Delete all quiz results for this quiz
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    // Get user document to update knowledge points
+    const userDocRef = doc(db, "users", userId);
+    const userDoc = await getDoc(userDocRef);
+    
+    if (userDoc.exists()) {
+      const userData = userDoc.data();
+      let pointsToDeduct = 0;
+      
+      // Calculate points to deduct (use the maximum score from all attempts)
+      let maxPoints = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        const points = data.pointsEarned || 0;
+        if (points > maxPoints) {
+          maxPoints = points;
+        }
+      });
+      
+      pointsToDeduct = maxPoints;
+      
+      // Update user's knowledge points
+      if (pointsToDeduct > 0) {
+        const currentPoints = userData.knowledgePoints || 0;
+        const newPoints = Math.max(0, currentPoints - pointsToDeduct);
+        batch.update(userDocRef, { knowledgePoints: newPoints });
+      }
+    }
+    
+    // Commit the batch
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error("Error resetting quiz:", error);
+    throw error;
+  }
+};
+
+// Reset all quizzes for a user
+export const resetAllQuizzes = async (userId: string) => {
+  try {
+    console.log(`Resetting all quizzes for user ${userId}`);
+    
+    // Query for all quiz results for this user
+    const quizResultsRef = collection(db, "quizResults");
+    const q = query(quizResultsRef, where("userId", "==", userId));
+    
+    const querySnapshot = await getDocs(q);
+    
+    // Delete all quiz results
+    const batch = writeBatch(db);
+    querySnapshot.forEach((doc) => {
+      batch.delete(doc.ref);
+    });
+    
+    // Reset user's knowledge points to 0
+    const userDocRef = doc(db, "users", userId);
+    batch.update(userDocRef, { knowledgePoints: 0 });
+    
+    // Commit the batch
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error("Error resetting all quizzes:", error);
     throw error;
   }
 };

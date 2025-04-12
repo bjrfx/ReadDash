@@ -15,9 +15,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, SearchIcon, FilterIcon, BookPlus } from "lucide-react";
-import { db } from "@/lib/firebase";
+import { Loader2, SearchIcon, FilterIcon, BookPlus, RotateCcw } from "lucide-react";
+import { db, resetQuiz, resetAllQuizzes } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Quiz {
   id: string;
@@ -37,73 +48,140 @@ interface Quiz {
 
 export default function Quizzes() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
+  
+  // State for reset confirmation dialogs
+  const [quizToReset, setQuizToReset] = useState<string | null>(null);
+  const [showResetAllDialog, setShowResetAllDialog] = useState(false);
   
   // Fetch quizzes from Firestore
-  useEffect(() => {
-    const fetchQuizzes = async () => {
-      if (!user) {
-        setIsLoading(false);
-        return;
-      }
+  const fetchQuizzes = async () => {
+    if (!user) {
+      setIsLoading(false);
+      return;
+    }
 
-      try {
-        setIsLoading(true);
-        // Fetch all quizzes
-        const quizzesRef = collection(db, "quizzes");
-        const quizzesSnapshot = await getDocs(quizzesRef);
-        
-        // Fetch completed quizzes for the current user
-        const quizResultsRef = collection(db, "quizResults");
-        const quizResultsQuery = query(quizResultsRef, where("userId", "==", user.uid));
-        const quizResultsSnapshot = await getDocs(quizResultsQuery);
-        
-        // Create a map of completed quizzes with their scores
-        const completedQuizzes = new Map();
-        quizResultsSnapshot.docs.forEach(doc => {
-          const resultData = doc.data();
-          completedQuizzes.set(resultData.quizId, {
-            completed: true,
-            score: resultData.score
-          });
+    try {
+      setIsLoading(true);
+      // Fetch all quizzes
+      const quizzesRef = collection(db, "quizzes");
+      const quizzesSnapshot = await getDocs(quizzesRef);
+      
+      // Fetch completed quizzes for the current user
+      const quizResultsRef = collection(db, "quizResults");
+      const quizResultsQuery = query(quizResultsRef, where("userId", "==", user.uid));
+      const quizResultsSnapshot = await getDocs(quizResultsQuery);
+      
+      // Create a map of completed quizzes with their scores
+      const completedQuizzes = new Map();
+      quizResultsSnapshot.docs.forEach(doc => {
+        const resultData = doc.data();
+        completedQuizzes.set(resultData.quizId, {
+          completed: true,
+          score: resultData.score
         });
+      });
+      
+      const quizzesData = quizzesSnapshot.docs.map(doc => {
+        const data = doc.data();
+        // Generate a description from the passage if none exists
+        const description = data.description || data.passage.substring(0, 120) + "...";
         
-        const quizzesData = quizzesSnapshot.docs.map(doc => {
-          const data = doc.data();
-          // Generate a description from the passage if none exists
-          const description = data.description || data.passage.substring(0, 120) + "...";
-          
-          const quizId = doc.id;
-          const completionInfo = completedQuizzes.get(quizId);
-          
-          return {
-            id: quizId,
-            ...data,
-            description,
-            // Convert Firestore timestamp to Date if it exists
-            createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
-            // Default estimated time based on content length if not provided
-            estimatedTime: data.estimatedTime || Math.ceil(data.passage.length / 1000),
-            // Add completion status and score if available
-            completed: completionInfo ? true : false,
-            score: completionInfo ? completionInfo.score : undefined
-          } as Quiz;
-        });
+        const quizId = doc.id;
+        const completionInfo = completedQuizzes.get(quizId);
         
-        setQuizzes(quizzesData);
-      } catch (error) {
-        console.error("Error fetching quizzes:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    
+        return {
+          id: quizId,
+          ...data,
+          description,
+          // Convert Firestore timestamp to Date if it exists
+          createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+          // Default estimated time based on content length if not provided
+          estimatedTime: data.estimatedTime || Math.ceil(data.passage.length / 1000),
+          // Add completion status and score if available
+          completed: completionInfo ? true : false,
+          score: completionInfo ? completionInfo.score : undefined
+        } as Quiz;
+      });
+      
+      setQuizzes(quizzesData);
+    } catch (error) {
+      console.error("Error fetching quizzes:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load quizzes. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+  useEffect(() => {
     fetchQuizzes();
   }, [user]);
+  
+  // Handler to reset a single quiz
+  const handleResetQuiz = async (quizId: string) => {
+    if (!user || !quizId) return;
+    
+    try {
+      setIsResetting(true);
+      await resetQuiz(user.uid, quizId);
+      
+      // Refresh quizzes
+      await fetchQuizzes();
+      
+      toast({
+        title: "Quiz reset",
+        description: "Quiz progress has been reset successfully.",
+      });
+    } catch (error) {
+      console.error("Error resetting quiz:", error);
+      toast({
+        title: "Reset failed",
+        description: "Failed to reset quiz progress. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+      setQuizToReset(null);
+    }
+  };
+  
+  // Handler to reset all quizzes
+  const handleResetAllQuizzes = async () => {
+    if (!user) return;
+    
+    try {
+      setIsResetting(true);
+      await resetAllQuizzes(user.uid);
+      
+      // Refresh quizzes
+      await fetchQuizzes();
+      
+      toast({
+        title: "All quizzes reset",
+        description: "All quiz progress has been reset successfully.",
+      });
+    } catch (error) {
+      console.error("Error resetting all quizzes:", error);
+      toast({
+        title: "Reset failed",
+        description: "Failed to reset all quiz progress. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+      setShowResetAllDialog(false);
+    }
+  };
   
   // Format estimated time
   const formatTime = (minutes: number) => {
@@ -148,7 +226,22 @@ export default function Quizzes() {
   return (
     <MainLayout currentRoute="/quizzes">
       <div className="p-4 sm:p-6">
-        <h2 className="font-heading text-2xl font-bold mb-6">Reading Quizzes</h2>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="font-heading text-2xl font-bold">Reading Quizzes</h2>
+          
+          {/* Reset All Button */}
+          {quizzes.some(quiz => quiz.completed) && (
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 text-red-500 hover:text-red-700 border-red-200 hover:border-red-300"
+              onClick={() => setShowResetAllDialog(true)}
+              disabled={isResetting}
+            >
+              <RotateCcw className="h-4 w-4" />
+              Reset All Progress
+            </Button>
+          )}
+        </div>
         
         {/* Search and Filters */}
         <div className="mb-6">
@@ -213,7 +306,11 @@ export default function Quizzes() {
             {filteredQuizzes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredQuizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} quiz={quiz} />
+                  <QuizCard 
+                    key={quiz.id} 
+                    quiz={quiz} 
+                    onReset={quiz.completed ? (quizId) => setQuizToReset(quizId) : undefined} 
+                  />
                 ))}
               </div>
             ) : (
@@ -226,7 +323,11 @@ export default function Quizzes() {
             {recommendedQuizzes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recommendedQuizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} quiz={quiz} />
+                  <QuizCard 
+                    key={quiz.id} 
+                    quiz={quiz} 
+                    onReset={quiz.completed ? (quizId) => setQuizToReset(quizId) : undefined} 
+                  />
                 ))}
               </div>
             ) : (
@@ -251,7 +352,11 @@ export default function Quizzes() {
             {recentQuizzes.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recentQuizzes.map((quiz) => (
-                  <QuizCard key={quiz.id} quiz={quiz} />
+                  <QuizCard 
+                    key={quiz.id} 
+                    quiz={quiz} 
+                    onReset={quiz.completed ? (quizId) => setQuizToReset(quizId) : undefined} 
+                  />
                 ))}
               </div>
             ) : (
@@ -266,12 +371,72 @@ export default function Quizzes() {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Single Quiz Reset Confirmation Dialog */}
+      <AlertDialog open={!!quizToReset} onOpenChange={(open) => !open && setQuizToReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset Quiz Progress</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset your progress for this quiz? 
+              This will remove all scores, points earned, and any progress related to this quiz. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => quizToReset && handleResetQuiz(quizToReset)}
+              disabled={isResetting}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Quiz"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Reset All Quizzes Confirmation Dialog */}
+      <AlertDialog open={showResetAllDialog} onOpenChange={setShowResetAllDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reset All Quiz Progress</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to reset progress for all quizzes? 
+              This will reset all your scores, remove all knowledge points, and erase all completion status. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isResetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleResetAllQuizzes}
+              disabled={isResetting}
+              className="bg-red-500 text-white hover:bg-red-600"
+            >
+              {isResetting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset All Quizzes"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </MainLayout>
   );
 }
 
 // Quiz Card Component
-function QuizCard({ quiz }: { quiz: Quiz }) {
+function QuizCard({ quiz, onReset }: { quiz: Quiz; onReset?: (quizId: string) => void }) {
   // Local formatTime function
   const formatEstimatedTime = (minutes: number) => {
     if (!minutes || isNaN(minutes)) return "Unknown";
@@ -322,13 +487,29 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
             </Badge>
           </div>
         </div>
-        <Button 
-          className="w-full mt-3"
-          size="sm"
-          asChild
-        >
-          <Link href={`/quiz/${quiz.id}`}>{quiz.completed ? 'Retake Quiz' : 'Start Quiz'}</Link>
-        </Button>
+        <div className="flex flex-col mt-3 gap-2">
+          <Button 
+            className="w-full"
+            size="sm"
+            asChild
+          >
+            <Link href={`/quiz/${quiz.id}`}>{quiz.completed ? 'Retake Quiz' : 'Start Quiz'}</Link>
+          </Button>
+          
+          {quiz.completed && onReset && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full text-red-500 hover:text-red-700 border-red-200 hover:border-red-300 hover:bg-red-50"
+              onClick={(e) => {
+                e.preventDefault();
+                onReset(quiz.id);
+              }}
+            >
+              Reset Quiz Progress
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
