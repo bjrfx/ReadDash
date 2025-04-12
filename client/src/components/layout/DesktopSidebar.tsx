@@ -27,6 +27,23 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+// Logo component with updated color (purple instead of blue)
+const Logo = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-7 w-7 text-purple-600 dark:text-purple-400"
+  >
+    <path d="M2 3h6a4 0 0 1 4 4v14a3 3 0 0 0-3-3H2V3z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7v-15z" />
+  </svg>
+);
+
 interface NavItem {
   label: string;
   href: string;
@@ -106,9 +123,10 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
   return (
     <nav className="hidden sm:flex flex-col fixed inset-y-0 left-0 w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 p-5 z-50">
       <div className="flex items-center mb-8">
-        <h1 className="font-heading text-2xl font-bold">
-          <span className="text-primary-600 dark:text-primary-400">Read</span>
-          <span className="text-secondary-600 dark:text-secondary-400">Dash</span>
+        <Logo />
+        <h1 className="font-heading text-2xl font-bold ml-2.5 tracking-tight">
+          <span className="text-purple-600 dark:text-purple-400 font-extrabold">Read</span>
+          <span className="text-teal-600 dark:text-teal-400">Dash</span>
         </h1>
       </div>
 
