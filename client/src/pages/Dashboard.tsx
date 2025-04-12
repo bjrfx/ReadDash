@@ -10,10 +10,24 @@ import { RecommendedQuizzes } from "@/components/dashboard/RecommendedQuizzes";
 import { Flame, Brain, Rocket, BookOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, limit, orderBy, doc, getDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, orderBy, doc, getDoc, Timestamp } from "firebase/firestore";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  
+  // Default values for weekly activity
+  const defaultWeeklyActivity = [
+    { day: "Mon", count: 0, isActive: false },
+    { day: "Tue", count: 0, isActive: false },
+    { day: "Wed", count: 0, isActive: false },
+    { day: "Thu", count: 0, isActive: false },
+    { day: "Fri", count: 0, isActive: false },
+    { day: "Sat", count: 0, isActive: false },
+    { day: "Sun", count: 0, isActive: false },
+  ];
+  
+  // State to store real weekly activity data
+  const [weeklyActivityData, setWeeklyActivityData] = useState(defaultWeeklyActivity);
   
   // Fetch user data including reading level from Firestore
   const { data: userData, isLoading: userLoading } = useQuery({
@@ -35,6 +49,76 @@ export default function Dashboard() {
       } catch (error) {
         console.error("Error fetching user data:", error);
         return null;
+      }
+    }
+  });
+  
+  // Fetch weekly activity data from Firestore
+  const { data: weeklyActivity, isLoading: weeklyActivityLoading } = useQuery({
+    queryKey: ['weeklyActivity', user?.uid],
+    enabled: !!user?.uid,
+    queryFn: async () => {
+      try {
+        console.log("Fetching weekly activity data from Firestore...");
+        
+        // Get current date and calculate the start of the week (Monday)
+        const today = new Date();
+        const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=Mon, 6=Sun
+        
+        // Mark today as active
+        const weeklyActivity = [...defaultWeeklyActivity];
+        weeklyActivity[currentDayIndex].isActive = true;
+        
+        // Calculate the start of the week (Monday)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - currentDayIndex);
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        // Calculate the end of the week (Sunday)
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
+        
+        console.log("Weekly activity range:", { 
+          startOfWeek: startOfWeek.toISOString(), 
+          endOfWeek: endOfWeek.toISOString()
+        });
+        
+        // Query quizResults for this user within the week
+        const quizResultsRef = collection(db, "quizResults");
+        const weeklyQuery = query(
+          quizResultsRef,
+          where("userId", "==", user.uid),
+          where("completedAt", ">=", Timestamp.fromDate(startOfWeek)),
+          where("completedAt", "<=", Timestamp.fromDate(endOfWeek))
+        );
+        
+        const quizSnapshot = await getDocs(weeklyQuery);
+        console.log(`Found ${quizSnapshot.docs.length} quizzes this week`);
+        
+        // Count quizzes for each day of the week
+        quizSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          if (data.completedAt) {
+            // Get the day of the week (0-6, where 0 is Sunday)
+            const completionDate = data.completedAt.toDate();
+            console.log("Quiz completion date:", completionDate);
+            
+            // Convert to our index (0=Mon, 6=Sun)
+            const dayOfWeek = completionDate.getDay(); // 0=Sun, 1=Mon, etc.
+            const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0=Mon, 6=Sun
+            
+            // Increment the count for this day
+            weeklyActivity[dayIndex].count += 1;
+          }
+        });
+        
+        console.log("Weekly activity data:", weeklyActivity);
+        return weeklyActivity;
+        
+      } catch (error) {
+        console.error("Error fetching weekly activity data:", error);
+        return defaultWeeklyActivity;
       }
     }
   });
@@ -214,16 +298,6 @@ export default function Dashboard() {
     pointsToNextLevel: 500,
   };
   
-  const defaultWeeklyActivity = [
-    { day: "Mon", count: 0, isActive: false },
-    { day: "Tue", count: 0, isActive: false },
-    { day: "Wed", count: 0, isActive: false },
-    { day: "Thu", count: 0, isActive: false },
-    { day: "Fri", count: 0, isActive: true },
-    { day: "Sat", count: 0, isActive: false },
-    { day: "Sun", count: 0, isActive: false },
-  ];
-  
   const defaultReadingLevels = [
     { id: "1", label: "5A", status: "completed" as const },
     { id: "2", label: "6A", status: "completed" as const },
@@ -316,10 +390,27 @@ export default function Dashboard() {
     ? recommendedQuizzes 
     : quizzesLoading ? [] : defaultQuizzes;
   
-  // Get weekly activity and levels from user stats
-  const weeklyActivity = userStats?.weeklyActivity || defaultWeeklyActivity;
+  // Get levels from user stats
   const readingLevels = userStats?.readingLevels || defaultReadingLevels;
   const currentProgress = userStats?.currentProgress || 78;
+  
+  // For testing: add some data to weeklyActivity if needed
+  const testWeeklyData = () => {
+    const testData = [...defaultWeeklyActivity];
+    const today = new Date();
+    const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    
+    // Mark today as active
+    testData[currentDayIndex].isActive = true;
+    
+    // Add some test counts
+    testData[0].count = 2; // Monday
+    testData[1].count = 1; // Tuesday
+    testData[2].count = 3; // Wednesday
+    testData[currentDayIndex].count = 1; // Today
+    
+    return testData;
+  };
   
   return (
     <>
@@ -331,7 +422,7 @@ export default function Dashboard() {
           <DashboardHeader stats={stats} />
           
           <ProgressCharts 
-            weeklyActivity={weeklyActivity} 
+            weeklyActivity={weeklyActivity || testWeeklyData()} 
             readingLevels={readingLevels} 
             currentProgress={currentProgress} 
           />
