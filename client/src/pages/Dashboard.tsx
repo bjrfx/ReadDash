@@ -288,6 +288,135 @@ export default function Dashboard() {
     }
   });
   
+  // Fetch reading level progress data
+  const { data: readingLevelData, isLoading: readingLevelLoading } = useQuery({
+    queryKey: ['readingLevelProgress', user?.uid, userData?.readingLevel],
+    enabled: !!user?.uid && !!userData?.readingLevel,
+    queryFn: async () => {
+      try {
+        console.log("Generating reading level progress data based on user's level");
+        
+        if (!userData?.readingLevel) {
+          console.log("No reading level in user data, using default");
+          return null;
+        }
+        
+        // Parse the current reading level
+        const currentLevelRaw = userData.readingLevel;
+        console.log("Current reading level:", currentLevelRaw);
+        
+        // Extract number and letter from reading level (e.g., "5A" -> 5, "A")
+        const levelMatch = currentLevelRaw.match(/(\d+)([A-Z])/);
+        if (!levelMatch) {
+          console.error("Invalid reading level format:", currentLevelRaw);
+          return null;
+        }
+        
+        const currentLevelNum = parseInt(levelMatch[1]);
+        const currentLevelLetter = levelMatch[2];
+        
+        console.log("Parsed level:", { num: currentLevelNum, letter: currentLevelLetter });
+        
+        // Define the level sequence - 2 levels behind, current, 1 level ahead, and goal (2 levels ahead)
+        const generateLevelSequence = () => {
+          const levels = [];
+          let startLevel = currentLevelNum - 2; // Start 2 levels behind
+          
+          // Ensure we don't go below level 1
+          if (startLevel < 1) {
+            startLevel = 1;
+          }
+          
+          // Generate previous levels (completed)
+          for (let i = startLevel; i < currentLevelNum; i++) {
+            levels.push({
+              id: `${i}A`,
+              label: `${i}A`,
+              status: 'completed' as const
+            });
+            
+            // Add B level if we're not at the current level yet
+            if (i < currentLevelNum - 1 || (i === currentLevelNum - 1 && currentLevelLetter === 'B')) {
+              levels.push({
+                id: `${i}B`,
+                label: `${i}B`,
+                status: 'completed' as const
+              });
+            }
+          }
+          
+          // Add current level
+          levels.push({
+            id: currentLevelRaw,
+            label: currentLevelRaw,
+            status: 'current' as const
+          });
+          
+          // Add next level (upcoming)
+          const nextLevel = currentLevelLetter === 'A' 
+            ? `${currentLevelNum}B` 
+            : `${currentLevelNum + 1}A`;
+            
+          levels.push({
+            id: nextLevel,
+            label: nextLevel,
+            status: 'upcoming' as const
+          });
+          
+          // Add goal level (2 levels ahead)
+          const goalLevelNum = currentLevelLetter === 'A' 
+            ? currentLevelNum + 1 
+            : currentLevelNum + 2;
+            
+          const goalLevel = `${goalLevelNum}A`;
+          
+          levels.push({
+            id: goalLevel,
+            label: goalLevel,
+            status: 'goal' as const
+          });
+          
+          // If we have too many levels, trim to show 5 total
+          if (levels.length > 5) {
+            return levels.slice(levels.length - 5);
+          }
+          
+          return levels;
+        };
+        
+        const readingLevels = generateLevelSequence();
+        console.log("Generated reading level sequence:", readingLevels);
+        
+        // Calculate current progress
+        // For simplicity, we'll use a random value between 50-90% for the progress within the current level
+        // In a real app, this would be calculated based on quiz performance or points
+        const pointsToNextLevel = userData.pointsToNextLevel || 100;
+        const knowledgePoints = userData.knowledgePoints || 0;
+        
+        // Calculate progress percentage
+        let currentProgress;
+        if (pointsToNextLevel > 0) {
+          // If we have pointsToNextLevel data, calculate real percentage
+          const earnedPoints = knowledgePoints % pointsToNextLevel;
+          currentProgress = Math.round((earnedPoints / pointsToNextLevel) * 100);
+        } else {
+          // Fallback to a random percentage if no data available
+          currentProgress = Math.floor(Math.random() * 41) + 50; // Random between 50-90%
+        }
+        
+        console.log("Current level progress:", currentProgress + "%");
+        
+        return {
+          readingLevels,
+          currentProgress
+        };
+      } catch (error) {
+        console.error("Error generating reading level data:", error);
+        return null;
+      }
+    }
+  });
+  
   // Default values for when data is loading
   const defaultStats = {
     readingLevel: "1A",
@@ -390,9 +519,9 @@ export default function Dashboard() {
     ? recommendedQuizzes 
     : quizzesLoading ? [] : defaultQuizzes;
   
-  // Get levels from user stats
-  const readingLevels = userStats?.readingLevels || defaultReadingLevels;
-  const currentProgress = userStats?.currentProgress || 78;
+  // Get reading level progress using real data from Firestore
+  const readingLevels = userStats?.readingLevels || readingLevelData?.readingLevels || defaultReadingLevels;
+  const currentProgress = readingLevelData?.currentProgress || userStats?.currentProgress || 78;
   
   // For testing: add some data to weeklyActivity if needed
   const testWeeklyData = () => {
