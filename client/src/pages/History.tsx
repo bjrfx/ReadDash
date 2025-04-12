@@ -14,7 +14,8 @@ import {
   TableRow 
 } from "@/components/ui/table";
 import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
 interface QuizHistoryItem {
   id: string;
@@ -31,13 +32,55 @@ interface QuizHistoryItem {
 
 export default function History() {
   const { user } = useAuth();
-  
-  // Fetch user quiz history
-  const { data: historyData, isLoading } = useQuery({
-    queryKey: ['/api/user/history'],
-    enabled: !!user,
-  });
-  
+  const [historyData, setHistoryData] = useState<QuizHistoryItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch user quiz history from Firestore
+  useEffect(() => {
+    const fetchQuizHistory = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const quizResultsRef = collection(db, "quizResults");
+        const quizResultsQuery = query(
+          quizResultsRef,
+          where("userId", "==", user.uid),
+          orderBy("completedAt", "desc")
+        );
+
+        const quizResultsSnapshot = await getDocs(quizResultsQuery);
+        const quizHistoryItems = quizResultsSnapshot.docs.map(doc => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            quizId: data.quizId,
+            title: data.title || "Untitled Quiz",
+            date: data.completedAt ? data.completedAt.toDate().toISOString() : new Date().toISOString(),
+            score: data.score || 0,
+            correctAnswers: data.correctCount || 0,
+            totalQuestions: data.totalQuestions || 0,
+            readingLevel: data.readingLevel || "N/A",
+            category: data.category || "Uncategorized",
+            timeSpent: data.timeSpent || 0
+          };
+        });
+
+        setHistoryData(quizHistoryItems);
+      } catch (error) {
+        console.error("Error fetching quiz history:", error);
+        setHistoryData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchQuizHistory();
+  }, [user]);
+
   // Format time in MM:SS format
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
@@ -62,49 +105,19 @@ export default function History() {
     
     return grouped;
   };
-  
-  // Sample data if loading
-  const defaultHistory: QuizHistoryItem[] = [
-    {
-      id: "hist-1",
-      quizId: "quiz-1",
-      title: "The Wonders of Marine Biology",
-      date: new Date().toISOString(),
-      score: 80,
-      correctAnswers: 4,
-      totalQuestions: 5,
-      readingLevel: "8B",
-      category: "Science",
-      timeSpent: 265, // in seconds
-    },
-    {
-      id: "hist-2",
-      quizId: "quiz-2",
-      title: "Space Exploration: Past and Future",
-      date: new Date(Date.now() - 86400000).toISOString(), // Yesterday
-      score: 60,
-      correctAnswers: 3,
-      totalQuestions: 5,
-      readingLevel: "8A",
-      category: "History/Science",
-      timeSpent: 312,
-    },
-    {
-      id: "hist-3",
-      quizId: "quiz-3",
-      title: "Modern Architecture and Design",
-      date: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
-      score: 100,
-      correctAnswers: 5,
-      totalQuestions: 5,
-      readingLevel: "8B",
-      category: "Arts",
-      timeSpent: 198,
-    },
-  ];
+
+  // Get current month quiz count
+  const getCurrentMonthQuizCount = (items: QuizHistoryItem[]) => {
+    const currentMonth = new Date().getMonth();
+    const currentYear = new Date().getFullYear();
+    return items.filter(item => {
+      const date = new Date(item.date);
+      return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+    }).length;
+  };
   
   // Use fetched data or default while loading
-  const quizHistory = historyData || defaultHistory;
+  const quizHistory = historyData;
   
   // Group history items by month
   const groupedHistory = groupByMonth(quizHistory);
@@ -145,14 +158,16 @@ export default function History() {
               <div className="text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Average Score</p>
                 <p className="text-3xl font-bold">
-                  {Math.round(quizHistory.reduce((sum, item) => sum + item.score, 0) / quizHistory.length)}%
+                  {quizHistory.length > 0 
+                    ? Math.round(quizHistory.reduce((sum, item) => sum + item.score, 0) / quizHistory.length)
+                    : 0}%
                 </p>
               </div>
               
               <div className="text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">This Month</p>
                 <p className="text-3xl font-bold">
-                  {Object.values(groupedHistory)[0]?.length || 0}
+                  {getCurrentMonthQuizCount(quizHistory)}
                 </p>
               </div>
             </div>

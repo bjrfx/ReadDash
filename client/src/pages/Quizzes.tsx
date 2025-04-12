@@ -30,6 +30,8 @@ interface Quiz {
   isRecommended?: boolean;
   createdAt: any;
   imageUrl?: string;
+  completed?: boolean; // Flag to indicate if the quiz has been completed by the user
+  score?: number; // Optional score if completed
 }
 
 export default function Quizzes() {
@@ -43,24 +45,51 @@ export default function Quizzes() {
   // Fetch quizzes from Firestore
   useEffect(() => {
     const fetchQuizzes = async () => {
+      if (!user) {
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
+        // Fetch all quizzes
         const quizzesRef = collection(db, "quizzes");
         const quizzesSnapshot = await getDocs(quizzesRef);
+        
+        // Fetch completed quizzes for the current user
+        const quizResultsRef = collection(db, "quizResults");
+        const quizResultsQuery = query(quizResultsRef, where("userId", "==", user.uid));
+        const quizResultsSnapshot = await getDocs(quizResultsQuery);
+        
+        // Create a map of completed quizzes with their scores
+        const completedQuizzes = new Map();
+        quizResultsSnapshot.docs.forEach(doc => {
+          const resultData = doc.data();
+          completedQuizzes.set(resultData.quizId, {
+            completed: true,
+            score: resultData.score
+          });
+        });
         
         const quizzesData = quizzesSnapshot.docs.map(doc => {
           const data = doc.data();
           // Generate a description from the passage if none exists
           const description = data.description || data.passage.substring(0, 120) + "...";
           
+          const quizId = doc.id;
+          const completionInfo = completedQuizzes.get(quizId);
+          
           return {
-            id: doc.id,
+            id: quizId,
             ...data,
             description,
             // Convert Firestore timestamp to Date if it exists
             createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
             // Default estimated time based on content length if not provided
-            estimatedTime: data.estimatedTime || Math.ceil(data.passage.length / 1000)
+            estimatedTime: data.estimatedTime || Math.ceil(data.passage.length / 1000),
+            // Add completion status and score if available
+            completed: completionInfo ? true : false,
+            score: completionInfo ? completionInfo.score : undefined
           } as Quiz;
         });
         
@@ -73,7 +102,7 @@ export default function Quizzes() {
     };
     
     fetchQuizzes();
-  }, []);
+  }, [user]);
   
   // Format estimated time
   const formatTime = (minutes: number) => {
@@ -270,6 +299,11 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
             Recommended
           </Badge>
         )}
+        {quiz.completed && (
+          <Badge variant="secondary" className="absolute bottom-2 right-2 bg-green-500 text-white">
+            Completed {quiz.score ? `${quiz.score}%` : ''}
+          </Badge>
+        )}
       </div>
       <CardContent className="p-4">
         <h4 className="font-medium mb-1 line-clamp-1">{quiz.title}</h4>
@@ -292,7 +326,7 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
           size="sm"
           asChild
         >
-          <Link href={`/quiz/${quiz.id}`}>Start Quiz</Link>
+          <Link href={`/quiz/${quiz.id}`}>{quiz.completed ? 'Retake Quiz' : 'Start Quiz'}</Link>
         </Button>
       </CardContent>
     </Card>
