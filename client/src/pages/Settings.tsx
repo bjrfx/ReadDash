@@ -11,9 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { useTheme } from "@/lib/hooks";
-import { signOut } from "@/lib/firebase";
+import { signOut, db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { useLocation } from "wouter";
+import { updateProfile } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
 import {
   Bell,
   Moon,
@@ -40,6 +42,16 @@ export default function Settings() {
     levelChanges: true,
     dailyReminders: false,
   });
+  
+  // State for display name editing
+  const [displayName, setDisplayName] = useState("");
+  
+  // Update display name state when user data is available
+  useEffect(() => {
+    if (user?.displayName) {
+      setDisplayName(user.displayName);
+    }
+  }, [user]);
   
   const [preferences, setPreferences] = useState({
     language: "english",
@@ -128,12 +140,58 @@ export default function Settings() {
                     <Label htmlFor="display-name">Display Name</Label>
                     <Input 
                       id="display-name" 
-                      value={user?.displayName || ""} 
-                      disabled 
+                      value={displayName} 
+                      disabled={user?.providerData[0]?.providerId === "google.com"}
                       className="mt-1"
+                      onChange={(e) => {
+                        // This will only work for email/password users
+                        // For Google users, the input is disabled
+                        setDisplayName(e.target.value);
+                      }}
                     />
+                    {user?.providerData[0]?.providerId !== "google.com" && (
+                      <Button 
+                        className="mt-2" 
+                        size="sm" 
+                        onClick={async () => {
+                          try {
+                            // Use the state value instead of getting from DOM
+                            const newDisplayName = displayName;
+                            
+                            if (newDisplayName && user) {
+                              // Update display name in Firebase Auth
+                              await updateProfile(user, {
+                                displayName: newDisplayName
+                              });
+                              
+                              // Update display name in Firestore
+                              const userDocRef = doc(db, "users", user.uid);
+                              await setDoc(userDocRef, {
+                                displayName: newDisplayName,
+                              }, { merge: true });
+                              
+                              toast({
+                                title: "Display name updated",
+                                description: "Your display name has been updated successfully."
+                              });
+                            }
+                          } catch (error) {
+                            console.error("Error updating display name:", error);
+                            toast({
+                              title: "Update failed",
+                              description: "There was a problem updating your display name.",
+                              variant: "destructive"
+                            });
+                          }
+                        }}
+                      >
+                        Update Name
+                      </Button>
+                    )}
                     <p className="text-xs text-gray-500 mt-1">
-                      Your display name is managed by your Google account
+                      {user?.providerData[0]?.providerId === "google.com" 
+                        ? "Your display name is managed by your Google account"
+                        : "You can edit your display name"}
                     </p>
                   </div>
                   
@@ -159,7 +217,7 @@ export default function Settings() {
                     Authentication
                   </h3>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                    You are currently signed in with Google.
+                    You are currently signed in with {user?.providerData[0]?.providerId === "google.com" ? "Google" : "Email and Password"}.
                   </p>
                   <Button 
                     variant="destructive" 
