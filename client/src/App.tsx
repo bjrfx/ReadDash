@@ -16,6 +16,7 @@ import EditQuiz from "@/pages/admin/EditQuiz";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Quizzes from "@/pages/Quizzes";
+import Vocabulary from "@/pages/Vocabulary";
 import AuthTest from "@/pages/AuthTest";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
@@ -54,6 +55,11 @@ function Router() {
             <QuizResults />
           </RequireAuth>
         )}
+      </Route>
+      <Route path="/vocabulary">
+        <RequireAuth>
+          <Vocabulary />
+        </RequireAuth>
       </Route>
       <Route path="/achievements">
         <RequireAuth>

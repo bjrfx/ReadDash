@@ -1,4 +1,4 @@
-import { Home, BookOpen, Trophy, User, ShieldAlert } from "lucide-react";
+import { Home, BookOpen, Trophy, User, ShieldAlert, Book } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { useAdmin } from "@/lib/hooks";
 
@@ -29,6 +29,11 @@ export function MobileNavBar({ currentRoute }: MobileNavBarProps) {
         <Link href="/quizzes" className={`flex flex-col items-center justify-center w-full h-full ${isActive("/quizzes") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
           <BookOpen className="h-5 w-5" />
           <span className="text-xs mt-1">Quizzes</span>
+        </Link>
+        
+        <Link href="/vocabulary" className={`flex flex-col items-center justify-center w-full h-full ${isActive("/vocabulary") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>
+          <Book className="h-5 w-5" />
+          <span className="text-xs mt-1">Vocab</span>
         </Link>
         
         <Link href="/achievements" className={`flex flex-col items-center justify-center w-full h-full ${isActive("/achievements") ? "text-primary-600 dark:text-primary-400" : "text-gray-500 dark:text-gray-400"}`}>

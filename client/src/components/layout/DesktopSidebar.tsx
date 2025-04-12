@@ -6,7 +6,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Home, BookOpen, Trophy, History, Settings, LogOut, ShieldAlert, Edit } from "lucide-react";
+import { Home, BookOpen, Trophy, History, Settings, LogOut, ShieldAlert, Edit, Book } from "lucide-react";
 import { useDailyGoal } from "@/lib/dailyGoal";
 import { useUserData } from "@/lib/userData";
 import { useState } from "react";
@@ -35,6 +35,8 @@ interface NavItem {
 
 interface DesktopSidebarProps {
   user: User | null;
+  userLevel?: string;
+  dailyGoalProgress?: number;
 }
 
 export function DesktopSidebar({ user }: DesktopSidebarProps) {
@@ -56,6 +58,7 @@ export function DesktopSidebar({ user }: DesktopSidebarProps) {
   const navItems: NavItem[] = [
     { label: "Dashboard", href: "/", icon: <Home className="w-5 text-center" /> },
     { label: "Reading Quizzes", href: "/quizzes", icon: <BookOpen className="w-5 text-center" /> },
+    { label: "Vocabulary", href: "/vocabulary", icon: <Book className="w-5 text-center" /> },
     { label: "Achievements", href: "/achievements", icon: <Trophy className="w-5 text-center" /> },
     { label: "History", href: "/history", icon: <History className="w-5 text-center" /> },
     { label: "Settings", href: "/settings", icon: <Settings className="w-5 text-center" /> },

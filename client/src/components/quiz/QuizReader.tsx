@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -6,6 +6,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { VocabularyContextMenu } from "@/components/ui/vocabulary-context-menu";
+import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/firebase";
+import { doc, arrayUnion, updateDoc } from "firebase/firestore";
+import { useAuth } from "@/lib/hooks";
 
 interface Question {
   id?: string;
@@ -46,6 +51,82 @@ export function QuizReader({
 }: QuizReaderProps) {
   // State for fill-in-the-blank answers
   const [blankAnswers, setBlankAnswers] = useState<Record<string, string>>({});
+  const { toast } = useToast();
+  const { user } = useAuth();
+  const passageContainerRef = useRef<HTMLDivElement>(null);
+  
+  // State for vocabulary context menu
+  const [contextMenu, setContextMenu] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    selectedWord: string;
+  }>({
+    visible: false,
+    x: 0,
+    y: 0,
+    selectedWord: '',
+  });
+  
+  // Handle right-click on the passage
+  const handlePassageContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    
+    // Get the selected text
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
+    
+    // Only show the context menu if text is selected
+    if (selectedText && selectedText.length > 0) {
+      setContextMenu({
+        visible: true,
+        x: event.clientX,
+        y: event.clientY,
+        selectedWord: selectedText,
+      });
+    }
+  }, []);
+  
+  // Handle closing the context menu
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(prev => ({ ...prev, visible: false }));
+  }, []);
+  
+  // Handle adding a word to vocabulary
+  const handleAddToVocabulary = useCallback(async (word: string) => {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "You need to be logged in to add words to your vocabulary.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const userDocRef = doc(db, "users", user.uid);
+      await updateDoc(userDocRef, {
+        vocabulary: arrayUnion({
+          word,
+          addedAt: new Date().toISOString(),
+          quizId: quiz.id,
+          quizTitle: quiz.title,
+        }),
+      });
+      
+      toast({
+        title: "Word added",
+        description: `"${word}" has been added to your vocabulary list.`,
+      });
+    } catch (error) {
+      console.error("Error adding word to vocabulary:", error);
+      toast({
+        title: "Failed to add word",
+        description: "There was an error adding the word to your vocabulary. Please try again.",
+        variant: "destructive",
+      });
+    }
+  }, [user, quiz, toast]);
   
   // Make sure quiz and quiz.questions exists before accessing
   if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
@@ -255,9 +336,13 @@ export function QuizReader({
         </span>
       </div>
       
-      {/* Reading passage */}
-      <Card className="mb-6">
-        <CardContent className="p-5">
+      {/* Reading passage with context menu */}
+      <Card className="mb-6 relative">
+        <CardContent 
+          ref={passageContainerRef}
+          className="p-5 select-text" 
+          onContextMenu={handlePassageContextMenu}
+        >
           {quiz.passage && quiz.passage.split('\n').map((paragraph, index) => (
             <p key={index} className="text-base mb-4 last:mb-0">
               {paragraph}
@@ -267,6 +352,18 @@ export function QuizReader({
             <p className="text-base text-amber-600 dark:text-amber-400">
               No reading passage available for this quiz.
             </p>
+          )}
+          
+          {/* Vocabulary Context Menu */}
+          {contextMenu.visible && (
+            <VocabularyContextMenu 
+              x={contextMenu.x}
+              y={contextMenu.y}
+              selectedWord={contextMenu.selectedWord}
+              onAddToVocabulary={handleAddToVocabulary}
+              onClose={handleCloseContextMenu}
+              containerRef={passageContainerRef}
+            />
           )}
         </CardContent>
       </Card>
