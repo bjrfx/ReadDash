@@ -26,7 +26,15 @@ export function QuizResults({
   levelImproved,
   nextLevel,
 }: QuizResultsProps) {
-  const scorePercentage = Math.round(score * 100);
+  // Ensure score is a valid number between 0-1 before converting to percentage
+  const validScore = typeof score === 'number' && !isNaN(score) 
+    ? score 
+    : correctAnswers && totalQuestions 
+      ? correctAnswers / totalQuestions 
+      : 0;
+      
+  // Calculate score percentage (0-100)
+  const scorePercentage = Math.round(validScore * 100);
   
   return (
     <Card className="mb-6">
@@ -36,19 +44,21 @@ export function QuizResults({
             <CheckIcon className="w-8 h-8" />
           </div>
           <h2 className="font-heading text-2xl font-bold mb-1">Quiz Complete!</h2>
-          <p className="text-gray-500 dark:text-gray-400">{title}</p>
+          <p className="text-gray-500 dark:text-gray-400">{title || "Quiz"}</p>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Score</p>
             <p className="text-2xl font-bold">{scorePercentage}%</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">{correctAnswers} out of {totalQuestions} correct</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {correctAnswers || 0} out of {totalQuestions || 0} correct
+            </p>
           </div>
           
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Points Earned</p>
-            <p className="text-2xl font-bold">+{pointsEarned}</p>
+            <p className="text-2xl font-bold">+{pointsEarned || 0}</p>
             <p className="text-xs text-green-600 dark:text-green-400">
               <span className="inline-block mr-1">↑</span> Knowledge Points
             </p>
@@ -56,8 +66,8 @@ export function QuizResults({
           
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 text-center">
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Time Spent</p>
-            <p className="text-2xl font-bold">{timeSpent}</p>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Average: {averageTime}</p>
+            <p className="text-2xl font-bold">{timeSpent || "0:00"}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400">Average: {averageTime || "0:00"}</p>
           </div>
         </div>
         
