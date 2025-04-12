@@ -1,7 +1,9 @@
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
+import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { useQuery } from "@tanstack/react-query";
@@ -11,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 
 export default function Achievements() {
   const { user } = useAuth();
+  const { data: userData } = useUserData();
   
   // Fetch achievements data
   const { data: achievementsData, isLoading } = useQuery({
@@ -126,10 +129,10 @@ export default function Achievements() {
   
   return (
     <>
-      <MobileHeader user={user} userLevel="8B" notificationCount={3} />
-      <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} notificationCount={3} />
+      <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
       
-      <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
+      <MainLayout currentRoute="/achievements">
         <div className="p-4 sm:p-6">
           <h2 className="font-heading text-2xl font-bold mb-6">Achievements</h2>
           
@@ -217,9 +220,7 @@ export default function Achievements() {
             </div>
           </div>
         </div>
-      </main>
-      
-      <MobileNavBar currentRoute="/achievements" />
+      </MainLayout>
     </>
   );
 }

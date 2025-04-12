@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAdmin, useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
@@ -21,6 +22,7 @@ export default function Admin() {
   const { user } = useAuth();
   const { isAdmin, loading: adminLoading } = useAdmin();
   const { toast } = useToast();
+  const { data: userData } = useUserData();
   
   // State to hold Firebase data
   const [adminStats, setAdminStats] = useState(null);
@@ -348,13 +350,21 @@ export default function Admin() {
   
   // Use fetched data or defaults
   const stats = adminStats || defaultStats;
-  const userData = users || defaultUsers;
+  const usersData = users || defaultUsers;
   const passageData = passages || defaultPassages;
   
   return (
     <>
-      <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
-      <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileHeader 
+        user={user} 
+        userLevel={userData?.readingLevel || "1A"} 
+        notificationCount={stats.newIssues} 
+      />
+      <DesktopSidebar 
+        user={user} 
+        userLevel={userData?.readingLevel || "1A"} 
+        dailyGoalProgress={2} 
+      />
       <MobileNavBar currentRoute="/admin" />
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
@@ -383,7 +393,7 @@ export default function Admin() {
           <AdminHeader stats={stats} />
           
           <UsersList 
-            users={userData} 
+            users={usersData} 
             onViewUser={handleViewUser} 
             onEditUser={handleEditUser} 
           />

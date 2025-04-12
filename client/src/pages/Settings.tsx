@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,8 +81,8 @@ export default function Settings() {
   };
   
   return (
-    <MainLayout currentRoute="/settings" userLevel="8B">
-      <div className="p-4 sm:p-6">
+    <MainLayout currentRoute="/settings">
+      <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <h2 className="font-heading text-2xl font-bold mb-6">Settings</h2>
         
         <Tabs defaultValue="account">

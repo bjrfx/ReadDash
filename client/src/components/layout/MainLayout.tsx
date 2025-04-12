@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
@@ -7,7 +8,6 @@ import { MobileNavBar } from "@/components/layout/MobileNavBar";
 interface MainLayoutProps {
   children: ReactNode;
   currentRoute: string;
-  userLevel?: string;
   dailyGoalProgress?: number;
   notificationCount?: number;
 }
@@ -15,11 +15,14 @@ interface MainLayoutProps {
 export function MainLayout({ 
   children, 
   currentRoute,
-  userLevel = "1A",
   dailyGoalProgress = 0,
   notificationCount = 0
 }: MainLayoutProps) {
   const { user } = useAuth();
+  const { data: userData, isLoading } = useUserData();
+  
+  // Use real reading level from Firestore or fallback to default
+  const userLevel = userData?.readingLevel || "1A";
 
   return (
     <>

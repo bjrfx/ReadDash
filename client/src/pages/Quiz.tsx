@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
@@ -34,6 +35,7 @@ export default function Quiz() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { data: userData } = useUserData();
   const { toast } = useToast();
   
   // State for quiz data and loading
@@ -234,10 +236,15 @@ export default function Quiz() {
   // Show loading state
   if (quizLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        <span className="ml-2">Loading quiz...</span>
-      </div>
+      <>
+        <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} />
+        <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
+        
+        <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <span className="ml-2">Loading quiz...</span>
+        </main>
+      </>
     );
   }
   
@@ -261,8 +268,8 @@ export default function Quiz() {
   
   return (
     <>
-      <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
-      <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} />
+      <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
         <div className="p-4 sm:p-6 max-w-3xl mx-auto">

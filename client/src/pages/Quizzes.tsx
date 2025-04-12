@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -135,7 +136,7 @@ export default function Quizzes() {
   
   if (isLoading) {
     return (
-      <MainLayout currentRoute="/quizzes" userLevel="8B">
+      <MainLayout currentRoute="/quizzes">
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
           <span className="ml-2">Loading quizzes...</span>
@@ -145,7 +146,7 @@ export default function Quizzes() {
   }
   
   return (
-    <MainLayout currentRoute="/quizzes" userLevel="8B">
+    <MainLayout currentRoute="/quizzes">
       <div className="p-4 sm:p-6">
         <h2 className="font-heading text-2xl font-bold mb-6">Reading Quizzes</h2>
         

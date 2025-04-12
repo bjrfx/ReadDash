@@ -316,7 +316,7 @@ export default function History() {
   
   if (isLoading) {
     return (
-      <MainLayout currentRoute="/history" userLevel="8B">
+      <MainLayout currentRoute="/history">
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
           <span className="ml-2">Loading history...</span>
@@ -326,7 +326,7 @@ export default function History() {
   }
   
   return (
-    <MainLayout currentRoute="/history" userLevel="8B">
+    <MainLayout currentRoute="/history">
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-heading text-2xl font-bold">Quiz History</h2>

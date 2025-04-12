@@ -1,5 +1,6 @@
 import { useParams, useLocation } from "wouter";
 import { useAuth } from "@/lib/hooks";
+import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
@@ -26,6 +27,7 @@ export default function QuizResults() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { user } = useAuth();
+  const { data: userData } = useUserData();
   
   // State for quiz results
   const [results, setResults] = useState<QuizResultData | null>(null);
@@ -105,10 +107,15 @@ export default function QuizResults() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
-        <span className="ml-2">Loading results...</span>
-      </div>
+      <>
+        <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} />
+        <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
+        
+        <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
+          <span className="ml-2">Loading results...</span>
+        </main>
+      </>
     );
   }
   
@@ -129,8 +136,8 @@ export default function QuizResults() {
   
   return (
     <>
-      <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
-      <DesktopSidebar user={user} userLevel="8B" dailyGoalProgress={2} />
+      <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} />
+      <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
         <div className="p-4 sm:p-6 max-w-3xl mx-auto">
@@ -145,6 +152,15 @@ export default function QuizResults() {
             levelImproved={results.levelImproved}
             nextLevel={results.nextLevel}
           />
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Button onClick={() => setLocation(`/quizzes`)}>
+              Take Another Quiz
+            </Button>
+            <Button variant="outline" onClick={() => setLocation(`/history`)}>
+              View Quiz History
+            </Button>
+          </div>
         </div>
       </main>
       
