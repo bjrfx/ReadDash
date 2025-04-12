@@ -87,20 +87,20 @@ export const CookieConsent: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex flex-wrap justify-end gap-3 pt-3 pb-3">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <CardFooter className="flex flex-row justify-end gap-2 sm:gap-3 pt-2 sm:pt-3 pb-2 sm:pb-3">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1 sm:flex-none">
                 <Button 
                   variant="outline" 
                   onClick={declineCookies}
-                  className="rounded-full px-4 border-gray-300 hover:border-gray-400 transition-colors w-full sm:w-auto"
+                  className="rounded-full text-sm sm:text-sm px-3 sm:px-4 py-2 sm:py-2 h-auto border-gray-300 hover:border-gray-400 transition-colors w-full"
                 >
                   Essential cookies only
                 </Button>
               </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="flex-1 sm:flex-none">
                 <Button 
                   onClick={acceptCookies}
-                  className="rounded-full px-4 shadow-sm hover:shadow transition-all w-full sm:w-auto"
+                  className="rounded-full text-sm sm:text-sm px-3 sm:px-4 py-2 sm:py-2 h-auto shadow-sm hover:shadow transition-all w-full"
                 >
                   Accept all cookies
                 </Button>
