@@ -22,6 +22,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
+// Logo component with updated color (purple instead of blue)
+const Logo = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="h-10 w-10 text-purple-600 dark:text-purple-400"
+  >
+    <path d="M2 3h6a4 0 0 1 4 4v14a3 3 0 0 0-3-3H2V3z" />
+    <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7v-15z" />
+  </svg>
+);
+
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -293,12 +310,15 @@ export default function Login() {
         <ThemeToggle />
       </div>
       
-      <div className="w-full max-w-md mb-8">
-        <h1 className="text-4xl font-bold text-center font-heading">
-          <span className="text-primary-600 dark:text-primary-400">Read</span>
-          <span className="text-secondary-600 dark:text-secondary-400">Dash</span>
-        </h1>
-        <p className="text-center text-gray-600 dark:text-gray-400 mt-2">
+      <div className="w-full max-w-md mb-8 flex flex-col items-center">
+        <div className="flex items-center justify-center mb-2">
+          <Logo />
+          <h1 className="text-4xl font-bold font-heading ml-3 tracking-tight">
+            <span className="text-purple-600 dark:text-purple-400 font-extrabold">Read</span>
+            <span className="text-teal-600 dark:text-teal-400">Dash</span>
+          </h1>
+        </div>
+        <p className="text-center text-gray-600 dark:text-gray-400 mt-1">
           Improve your reading comprehension skills
         </p>
       </div>
@@ -679,8 +699,8 @@ export default function Login() {
       </Card>
       
       <div className="mt-8 text-sm text-gray-500 dark:text-gray-400 text-center">
-        <p>ReadDash - A modern reading comprehension web application</p>
-        <p className="mt-1">© {currentYear} ReadDash</p>
+        <p>ReadDash - A modern reading comprehension web application.</p>
+        <p className="mt-1">© {currentYear} ReadDash, a subsidiary of <a style={{textDecorationLine: 'underline'}} href="https://bdotsoftware.com">bdotSoftware</a>.</p>
       </div>
     </div>
   );
