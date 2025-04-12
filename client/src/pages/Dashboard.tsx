@@ -158,6 +158,52 @@ export default function Dashboard() {
     }
   });
   
+  // Fetch user quiz completion data from Firestore
+  const { data: quizCompletionData, isLoading: quizCompletionLoading } = useQuery({
+    queryKey: ['quizCompletionData', user?.uid],
+    enabled: !!user?.uid,
+    queryFn: async () => {
+      try {
+        console.log("Fetching quiz completion data from Firestore...");
+        const quizResultsRef = collection(db, "quizResults");
+        const quizQuery = query(
+          quizResultsRef,
+          where("userId", "==", user.uid)
+        );
+        
+        const quizSnapshot = await getDocs(quizQuery);
+        console.log(`Found ${quizSnapshot.docs.length} completed quizzes for this user`);
+        
+        // Get current date and calculate the start of the current week
+        const today = new Date();
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
+        startOfWeek.setHours(0, 0, 0, 0);
+        
+        // Count quizzes completed this week
+        let quizzesThisWeek = 0;
+        
+        // Process quiz results
+        quizSnapshot.docs.forEach(doc => {
+          const data = doc.data();
+          
+          // Check if quiz was completed this week
+          if (data.completedAt && data.completedAt.toDate() >= startOfWeek) {
+            quizzesThisWeek++;
+          }
+        });
+        
+        return {
+          quizzesCompleted: quizSnapshot.docs.length,
+          quizzesThisWeek: quizzesThisWeek
+        };
+      } catch (error) {
+        console.error("Error fetching quiz completion data:", error);
+        return null;
+      }
+    }
+  });
+  
   // Default values for when data is loading
   const defaultStats = {
     readingLevel: "1A",
@@ -256,6 +302,10 @@ export default function Dashboard() {
     previousLevel: userData?.previousLevel || defaultStats.previousLevel,
     // Use real knowledge points if available
     knowledgePoints: userData?.knowledgePoints || defaultStats.knowledgePoints,
+    // Use real quizzes completed count from Firestore
+    quizzesCompleted: quizCompletionData?.quizzesCompleted || defaultStats.quizzesCompleted,
+    // Use real quizzes completed this week count from Firestore
+    quizzesThisWeek: quizCompletionData?.quizzesThisWeek || defaultStats.quizzesThisWeek,
   };
   
   // Prepare achievements data for the component
