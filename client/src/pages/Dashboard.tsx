@@ -9,6 +9,8 @@ import { AchievementsList } from "@/components/dashboard/AchievementsList";
 import { RecommendedQuizzes } from "@/components/dashboard/RecommendedQuizzes";
 import { Flame, Brain, Rocket, BookOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -25,10 +27,111 @@ export default function Dashboard() {
     enabled: !!user,
   });
   
-  // Fetch recommended quizzes
-  const { data: recommendedQuizzes, isLoading: quizzesLoading } = useQuery({
-    queryKey: ['/api/quizzes/recommended'],
+  // Fetch recommended quizzes from Firestore
+  const { data: recommendedQuizzes, isLoading: quizzesLoading, error: quizzesError } = useQuery({
+    queryKey: ['recommendedQuizzes'],
     enabled: !!user,
+    queryFn: async () => {
+      try {
+        console.log("Fetching recommended quizzes from Firestore...");
+        
+        // Option 1: First try with where clause and orderBy 
+        // (might require composite index)
+        try {
+          const quizzesRef = collection(db, "quizzes");
+          const quizzesQuery = query(
+            quizzesRef,
+            where("isRecommended", "==", true),
+            orderBy("createdAt", "desc"),
+            limit(5)
+          );
+          
+          const quizzesSnapshot = await getDocs(quizzesQuery);
+          console.log(`Found ${quizzesSnapshot.docs.length} recommended quizzes with where+orderBy`);
+          
+          if (quizzesSnapshot.docs.length > 0) {
+            // Map the documents to the format expected by RecommendedQuizzes
+            return quizzesSnapshot.docs.map(doc => {
+              const data = doc.data();
+              console.log(`Quiz data for ${doc.id}:`, data);
+              return {
+                id: doc.id,
+                title: data.title || "Untitled Quiz",
+                description: data.description || (data.passage ? data.passage.substring(0, 120) + "..." : "No description available"),
+                image: data.imageUrl || "",
+                readingLevel: data.readingLevel || "N/A",
+                category: data.category || "Uncategorized",
+              };
+            });
+          }
+        } catch (indexError) {
+          console.error("Error with first query approach:", indexError);
+          // If index error, we'll continue to the next approach
+        }
+        
+        // Option 2: If the first query fails, try without orderBy
+        // (in case there's no composite index setup)
+        const simpleQuery = query(
+          collection(db, "quizzes"),
+          where("isRecommended", "==", true),
+          limit(5)
+        );
+        
+        const simpleSnapshot = await getDocs(simpleQuery);
+        console.log(`Found ${simpleSnapshot.docs.length} recommended quizzes with simple query`);
+        
+        if (simpleSnapshot.docs.length > 0) {
+          return simpleSnapshot.docs.map(doc => {
+            const data = doc.data();
+            console.log(`Quiz data for ${doc.id}:`, data);
+            return {
+              id: doc.id,
+              title: data.title || "Untitled Quiz",
+              description: data.description || (data.passage ? data.passage.substring(0, 120) + "..." : "No description available"),
+              image: data.imageUrl || "",
+              readingLevel: data.readingLevel || "N/A",
+              category: data.category || "Uncategorized",
+            };
+          });
+        }
+        
+        // Option 3: As a last resort, get all quizzes and filter client-side
+        console.log("No results with recommended flag, fetching all quizzes...");
+        const allQuizzesQuery = query(
+          collection(db, "quizzes"),
+          limit(5)
+        );
+        
+        const allQuizzesSnapshot = await getDocs(allQuizzesQuery);
+        console.log(`Found ${allQuizzesSnapshot.docs.length} total quizzes`);
+        
+        // Log all quizzes to see their structure
+        allQuizzesSnapshot.docs.forEach(doc => {
+          console.log(`Quiz ${doc.id}:`, doc.data());
+        });
+        
+        // If we have any quizzes at all, return them
+        if (allQuizzesSnapshot.docs.length > 0) {
+          return allQuizzesSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              title: data.title || "Untitled Quiz",
+              description: data.description || (data.passage ? data.passage.substring(0, 120) + "..." : "No description available"),
+              image: data.imageUrl || "",
+              readingLevel: data.readingLevel || "N/A",
+              category: data.category || "Uncategorized",
+            };
+          });
+        }
+        
+        console.log("No quizzes found at all in the database");
+        return [];
+      } catch (error) {
+        console.error("Error fetching recommended quizzes:", error);
+        throw error;
+      }
+    }
   });
   
   // Default values for when data is loading
@@ -90,6 +193,7 @@ export default function Dashboard() {
     }
   ];
   
+  // Fallback quizzes if no recommended quizzes are found
   const defaultQuizzes = [
     {
       id: "1",
@@ -122,8 +226,10 @@ export default function Dashboard() {
   // Prepare achievements data for the component
   const achievementsData = achievements || defaultAchievements;
   
-  // Prepare quizzes data for the component
-  const quizzesData = recommendedQuizzes || defaultQuizzes;
+  // Prepare quizzes data for the component - use the fetched data if available
+  const quizzesData = recommendedQuizzes?.length > 0 
+    ? recommendedQuizzes 
+    : quizzesLoading ? [] : defaultQuizzes;
   
   // Get weekly activity and levels from user stats
   const weeklyActivity = userStats?.weeklyActivity || defaultWeeklyActivity;
