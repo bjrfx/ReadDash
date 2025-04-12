@@ -23,6 +23,7 @@ import { RequireAdmin } from "@/components/auth/RequireAdmin";
 import { useEffect } from "react";
 import { handleRedirectResult } from "./lib/firebase";
 import CookieConsent from "@/components/ui/cookie-consent/CookieConsent";
+import InstallPopup from "@/components/ui/install-popup";
 
 function Router() {
   return (
@@ -148,6 +149,7 @@ function App() {
       <Router />
       <CookieConsent />
       <Toaster />
+      <InstallPopup delay={5000} />
     </QueryClientProvider>
   );
 }

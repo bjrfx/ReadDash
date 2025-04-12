@@ -48,6 +48,24 @@
   }
 }
 
+/* Gradient animations */
+@keyframes gradient-x {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient-x {
+  animation: gradient-x 15s ease infinite;
+  background-size: 200% 200%;
+}
+
 /* Shadow glow effect for badges and small elements */
 .shadow-glow {
   box-shadow: 0 0 8px 2px rgba(124, 58, 237, 0.4);
