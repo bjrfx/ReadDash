@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/lib/hooks";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -13,7 +13,13 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark } from "lucide-react";
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark, ChevronDown } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
@@ -149,6 +155,32 @@ export default function History() {
     // Get unique quiz count for current month
     return getUniqueQuizzesCount(currentMonthItems);
   };
+
+  // Group quizzes by quizId and find best attempt
+  const groupQuizzesByIdWithBestAttempt = (items: QuizHistoryItem[]) => {
+    const grouped: Record<string, {
+      bestAttempt: QuizHistoryItem,
+      allAttempts: QuizHistoryItem[]
+    }> = {};
+    
+    // Group all attempts by quizId
+    items.forEach(item => {
+      if (!grouped[item.quizId]) {
+        grouped[item.quizId] = {
+          bestAttempt: item,
+          allAttempts: [item]
+        };
+      } else {
+        grouped[item.quizId].allAttempts.push(item);
+        // Update best attempt if this attempt has higher score
+        if (item.score > grouped[item.quizId].bestAttempt.score) {
+          grouped[item.quizId].bestAttempt = item;
+        }
+      }
+    });
+    
+    return grouped;
+  };
   
   // Use fetched data or default while loading
   const quizHistory = historyData;
@@ -207,7 +239,11 @@ export default function History() {
         </Card>
         
         {/* History By Month */}
-        {Object.entries(groupedHistory).map(([month, items]) => (
+        {Object.entries(groupedHistory).map(([month, items]) => {
+          // Group items by quizId
+          const groupedQuizzes = groupQuizzesByIdWithBestAttempt(items);
+          
+          return (
           <div key={month} className="mb-8">
             <div className="flex items-center mb-4">
               <Calendar className="mr-2 h-5 w-5 text-primary-500" />
@@ -228,39 +264,103 @@ export default function History() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {items.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.title}</TableCell>
-                      <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          className={
-                            item.score >= 90 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" :
-                            item.score >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" :
-                            "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-                          }
-                        >
-                          {item.score}% ({item.correctAnswers}/{item.totalQuestions})
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell">{item.readingLevel}</TableCell>
-                      <TableCell className="hidden md:table-cell">{item.category}</TableCell>
-                      <TableCell className="hidden md:table-cell">{formatTime(item.timeSpent)}</TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/quiz-results/${item.quizId}`}>
-                            <span className="sr-only">View details</span>
-                            <ChevronRight className="h-4 w-4" />
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+                  {Object.values(groupedQuizzes).map(({ bestAttempt, allAttempts }) => (
+                    <React.Fragment key={bestAttempt.id}>
+                      <TableRow className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                        <TableCell className="font-medium">{bestAttempt.title}</TableCell>
+                        <TableCell>{new Date(bestAttempt.date).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <Badge 
+                            className={
+                              bestAttempt.score >= 90 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" :
+                              bestAttempt.score >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" :
+                              "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+                            }
+                          >
+                            {bestAttempt.score}% ({bestAttempt.correctAnswers}/{bestAttempt.totalQuestions})
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="hidden md:table-cell">{bestAttempt.readingLevel}</TableCell>
+                        <TableCell className="hidden md:table-cell">{bestAttempt.category}</TableCell>
+                        <TableCell className="hidden md:table-cell">{formatTime(bestAttempt.timeSpent)}</TableCell>
+                        <TableCell>
+                          <div className="flex">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link href={`/quiz-results/${bestAttempt.quizId}`}>
+                                <span className="sr-only">View details</span>
+                                <ChevronRight className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      
+                      {allAttempts.length > 1 && (
+                        <TableRow className="border-t-0">
+                          <TableCell colSpan={7} className="p-0">
+                            <Accordion type="single" collapsible className="w-full">
+                              <AccordionItem value="attempts" className="border-b-0">
+                                <AccordionTrigger className="py-2 px-4 text-xs text-gray-500">
+                                  View all {allAttempts.length} attempts
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="overflow-hidden">
+                                    <Table>
+                                      <TableBody>
+                                        {allAttempts
+                                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                          .map((attempt, index) => (
+                                            <TableRow key={attempt.id} className={
+                                              attempt.id === bestAttempt.id 
+                                                ? "bg-gray-50 dark:bg-gray-800" 
+                                                : ""
+                                            }>
+                                              <TableCell className="font-medium pl-6">
+                                                {index === 0 && allAttempts.length > 1 ? "Latest attempt" : 
+                                                 attempt.id === bestAttempt.id ? "High score" : `Attempt ${allAttempts.length - index}`}
+                                              </TableCell>
+                                              <TableCell>{new Date(attempt.date).toLocaleDateString()}</TableCell>
+                                              <TableCell>
+                                                <Badge 
+                                                  className={
+                                                    attempt.score >= 90 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" :
+                                                    attempt.score >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" :
+                                                    "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+                                                  }
+                                                >
+                                                  {attempt.score}% ({attempt.correctAnswers}/{attempt.totalQuestions})
+                                                </Badge>
+                                              </TableCell>
+                                              <TableCell className="hidden md:table-cell">{attempt.readingLevel}</TableCell>
+                                              <TableCell className="hidden md:table-cell">{attempt.category}</TableCell>
+                                              <TableCell className="hidden md:table-cell">{formatTime(attempt.timeSpent)}</TableCell>
+                                              <TableCell>
+                                                <Button variant="ghost" size="sm" asChild>
+                                                  <Link href={`/quiz-results/${attempt.quizId}`}>
+                                                    <span className="sr-only">View details</span>
+                                                    <ChevronRight className="h-4 w-4" />
+                                                  </Link>
+                                                </Button>
+                                              </TableCell>
+                                            </TableRow>
+                                          ))}
+                                      </TableBody>
+                                    </Table>
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            </Accordion>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   ))}
                 </TableBody>
               </Table>
             </Card>
           </div>
-        ))}
+          );
+        })}
         
         {quizHistory.length === 0 && (
           <div className="flex flex-col items-center justify-center p-8 text-center">
