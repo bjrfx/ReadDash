@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/lib/hooks";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -15,15 +15,20 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, SearchIcon, FilterIcon, BookPlus } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { db } from "@/lib/firebase";
+import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
 interface Quiz {
   id: string;
   title: string;
-  description: string;
+  description?: string;
+  passage: string;
   category: string;
   readingLevel: string;
-  estimatedTime: number;
+  estimatedTime?: number;
+  questionCount: number;
+  isRecommended?: boolean;
+  createdAt: any;
   imageUrl?: string;
 }
 
@@ -32,88 +37,72 @@ export default function Quizzes() {
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [levelFilter, setLevelFilter] = useState("all");
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
-  // Fetch quizzes
-  const { data: quizzesData, isLoading } = useQuery({
-    queryKey: ['/api/quizzes'],
-    enabled: !!user,
-  });
+  // Fetch quizzes from Firestore
+  useEffect(() => {
+    const fetchQuizzes = async () => {
+      try {
+        setIsLoading(true);
+        const quizzesRef = collection(db, "quizzes");
+        const quizzesSnapshot = await getDocs(quizzesRef);
+        
+        const quizzesData = quizzesSnapshot.docs.map(doc => {
+          const data = doc.data();
+          // Generate a description from the passage if none exists
+          const description = data.description || data.passage.substring(0, 120) + "...";
+          
+          return {
+            id: doc.id,
+            ...data,
+            description,
+            // Convert Firestore timestamp to Date if it exists
+            createdAt: data.createdAt ? data.createdAt.toDate() : new Date(),
+            // Default estimated time based on content length if not provided
+            estimatedTime: data.estimatedTime || Math.ceil(data.passage.length / 1000)
+          } as Quiz;
+        });
+        
+        setQuizzes(quizzesData);
+      } catch (error) {
+        console.error("Error fetching quizzes:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchQuizzes();
+  }, []);
   
   // Format estimated time
   const formatTime = (minutes: number) => {
     return minutes < 1 ? "< 1 min" : `${minutes} min`;
   };
   
-  // Default quizzes data
-  const defaultQuizzes: Quiz[] = [
-    {
-      id: "q1",
-      title: "The Wonders of Marine Biology",
-      description: "Explore the fascinating world beneath the ocean's surface and discover the complex ecosystems of coral reefs.",
-      category: "Science",
-      readingLevel: "8B",
-      estimatedTime: 5
-    },
-    {
-      id: "q2",
-      title: "Space Exploration: Past and Future",
-      description: "The history and future prospects of human space travel, from the first moon landing to Mars missions.",
-      category: "History/Science",
-      readingLevel: "8A",
-      estimatedTime: 7
-    },
-    {
-      id: "q3",
-      title: "Modern Architecture and Design",
-      description: "Exploring the principles behind contemporary buildings and how they shape our cities and lives.",
-      category: "Arts",
-      readingLevel: "8B",
-      estimatedTime: 4
-    },
-    {
-      id: "q4",
-      title: "The American Civil War",
-      description: "A comprehensive look at the causes, key battles, and aftermath of the American Civil War.",
-      category: "History",
-      readingLevel: "7A",
-      estimatedTime: 8
-    },
-    {
-      id: "q5",
-      title: "Understanding Climate Change",
-      description: "Learn about the science behind climate change, its effects, and what we can do to mitigate its impact.",
-      category: "Science",
-      readingLevel: "6B",
-      estimatedTime: 6
-    },
-    {
-      id: "q6",
-      title: "Great American Literature",
-      description: "Explore the works of classic American authors and their impact on literature and culture.",
-      category: "Literature",
-      readingLevel: "9A",
-      estimatedTime: 10
-    }
-  ];
-  
-  // Use fetched data or default
-  const quizzes = quizzesData || defaultQuizzes;
-  
   // Apply filters and search
   const filteredQuizzes = quizzes.filter(quiz => {
-    const matchesSearch = quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         quiz.description.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = categoryFilter === "all" || quiz.category.toLowerCase().includes(categoryFilter.toLowerCase());
+    const matchesSearch = (quiz.title?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         quiz.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+    const matchesCategory = categoryFilter === "all" || quiz.category?.toLowerCase().includes(categoryFilter.toLowerCase());
     const matchesLevel = levelFilter === "all" || quiz.readingLevel === levelFilter;
     
     return matchesSearch && matchesCategory && matchesLevel;
   });
   
-  // Get recommended quizzes (based on user's level)
-  const recommendedQuizzes = filteredQuizzes.filter(quiz => quiz.readingLevel === "8B");
+  // Get recommended quizzes
+  const recommendedQuizzes = quizzes.filter(quiz => quiz.isRecommended === true);
   
-  // Recent quizzes (could be based on creation date in real app)
-  const recentQuizzes = [...filteredQuizzes].sort(() => 0.5 - Math.random()).slice(0, 3);
+  // Recent quizzes (based on createdAt timestamp)
+  const recentQuizzes = [...quizzes]
+    .sort((a, b) => b.createdAt - a.createdAt)
+    .slice(0, 6);
+  
+  // Get unique categories from all quizzes
+  const categories = [...new Set(quizzes.map(quiz => quiz.category))];
+  
+  // Get unique reading levels from all quizzes
+  const readingLevels = [...new Set(quizzes.map(quiz => quiz.readingLevel))].sort();
   
   if (isLoading) {
     return (
@@ -153,10 +142,11 @@ export default function Quizzes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="science">Science</SelectItem>
-                  <SelectItem value="history">History</SelectItem>
-                  <SelectItem value="literature">Literature</SelectItem>
-                  <SelectItem value="arts">Arts</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category} value={category.toLowerCase()}>
+                      {category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
               
@@ -169,12 +159,11 @@ export default function Quizzes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Levels</SelectItem>
-                  <SelectItem value="5A">Level 5A</SelectItem>
-                  <SelectItem value="6B">Level 6B</SelectItem>
-                  <SelectItem value="7A">Level 7A</SelectItem>
-                  <SelectItem value="8A">Level 8A</SelectItem>
-                  <SelectItem value="8B">Level 8B</SelectItem>
-                  <SelectItem value="9A">Level 9A</SelectItem>
+                  {readingLevels.map(level => (
+                    <SelectItem key={level} value={level}>
+                      Level {level}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -260,15 +249,15 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
   };
 
   return (
-    <Card className="overflow-hidden">
-      <div className="h-32 bg-gray-200 dark:bg-gray-700 relative">
+    <Card className="overflow-hidden hover:shadow-md transition-shadow duration-300">
+      <div className="h-32 bg-gradient-to-r from-primary-100 to-primary-200 dark:from-primary-900/30 dark:to-primary-800/30 relative">
         <div className="absolute inset-0 flex items-center justify-center">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             fill="none" 
             viewBox="0 0 24 24" 
             stroke="currentColor" 
-            className="w-12 h-12 text-gray-400 dark:text-gray-500"
+            className="w-12 h-12 text-primary-500/50 dark:text-primary-400/50"
           >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
@@ -276,27 +265,35 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
         <Badge variant="secondary" className="absolute top-2 right-2 bg-primary-500 text-white">
           Level {quiz.readingLevel}
         </Badge>
+        {quiz.isRecommended && (
+          <Badge variant="secondary" className="absolute top-2 left-2 bg-amber-500 text-white">
+            Recommended
+          </Badge>
+        )}
       </div>
       <CardContent className="p-4">
-        <h4 className="font-medium mb-1">{quiz.title}</h4>
+        <h4 className="font-medium mb-1 line-clamp-1">{quiz.title}</h4>
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-3 line-clamp-2">{quiz.description}</p>
         <div className="flex justify-between items-center">
-          <div className="flex space-x-2">
+          <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
               {quiz.category}
             </Badge>
             <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
-              {formatEstimatedTime(quiz.estimatedTime)}
+              {formatEstimatedTime(quiz.estimatedTime || 5)}
+            </Badge>
+            <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-full">
+              {quiz.questionCount} questions
             </Badge>
           </div>
-          <Button 
-            variant="link" 
-            className="text-primary-600 dark:text-primary-400 text-sm font-medium p-0"
-            asChild
-          >
-            <Link href={`/quiz/${quiz.id}`}>Start Quiz</Link>
-          </Button>
         </div>
+        <Button 
+          className="w-full mt-3"
+          size="sm"
+          asChild
+        >
+          <Link href={`/quiz/${quiz.id}`}>Start Quiz</Link>
+        </Button>
       </CardContent>
     </Card>
   );

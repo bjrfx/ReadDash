@@ -11,6 +11,7 @@ import Achievements from "@/pages/Achievements";
 import Admin from "@/pages/Admin";
 import UserView from "@/pages/admin/UserView";
 import UserEdit from "@/pages/admin/UserEdit";
+import QuizBuilder from "@/pages/admin/QuizBuilder";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Quizzes from "@/pages/Quizzes";
@@ -103,7 +104,7 @@ function Router() {
       </Route>
       <Route path="/admin/quizzes/new">
         <RequireAdmin>
-          <Admin />
+          <QuizBuilder />
         </RequireAdmin>
       </Route>
       
