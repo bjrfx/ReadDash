@@ -7,6 +7,7 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ProgressCharts } from "@/components/dashboard/ProgressCharts";
 import { AchievementsList } from "@/components/dashboard/AchievementsList";
 import { RecommendedQuizzes } from "@/components/dashboard/RecommendedQuizzes";
+import { DashboardSkeleton } from "@/components/ui/skeleton-loaders";
 import { Flame, Brain, Rocket, BookOpen, Award, Clock, Check, Target, TrendingUp, Medal, ThumbsUp, Zap, Heart, Star, Lightbulb } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
@@ -728,6 +729,9 @@ export default function Dashboard() {
     ? recommendedQuizzes 
     : quizzesLoading ? [] : defaultQuizzes;
 
+  // Show skeleton loader while data is loading
+  const isPageLoading = userLoading || weeklyActivityLoading || achievementsLoading || quizzesLoading || readingLevelLoading;
+  
   return (
     <>
       <MobileHeader user={user} userLevel={stats.readingLevel} notificationCount={3} />
@@ -735,20 +739,26 @@ export default function Dashboard() {
       
       <main className="sm:ml-64 pt-16 sm:pt-0 pb-16 sm:pb-0 min-h-screen">
         <div className="p-4 sm:p-6">
-          <DashboardHeader stats={stats} />
-          
-          <ProgressCharts 
-            weeklyActivity={weeklyActivity || testWeeklyData()} 
-            readingLevels={readingLevels} 
-            currentProgress={currentProgress} 
-          />
-          
-          <AchievementsList 
-            achievements={Array.isArray(userAchievements) && userAchievements.length > 0 ? userAchievements : defaultAchievements} 
-            loading={achievementsLoading} 
-          />
-          
-          <RecommendedQuizzes quizzes={quizzesData?.length > 0 ? quizzesData : []} />
+          {isPageLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <>
+              <DashboardHeader stats={stats} />
+              
+              <ProgressCharts 
+                weeklyActivity={weeklyActivity || testWeeklyData()} 
+                readingLevels={readingLevels} 
+                currentProgress={currentProgress} 
+              />
+              
+              <AchievementsList 
+                achievements={Array.isArray(userAchievements) && userAchievements.length > 0 ? userAchievements : defaultAchievements} 
+                loading={achievementsLoading} 
+              />
+              
+              <RecommendedQuizzes quizzes={quizzesData?.length > 0 ? quizzesData : []} />
+            </>
+          )}
         </div>
       </main>
       

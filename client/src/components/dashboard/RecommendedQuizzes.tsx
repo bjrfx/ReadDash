@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { QuizCardSkeleton } from "@/components/ui/skeleton-loaders";
 
 interface Quiz {
   id: string;
@@ -14,9 +15,10 @@ interface Quiz {
 
 interface RecommendedQuizzesProps {
   quizzes: Quiz[];
+  isLoading?: boolean;
 }
 
-export function RecommendedQuizzes({ quizzes }: RecommendedQuizzesProps) {
+export function RecommendedQuizzes({ quizzes, isLoading = false }: RecommendedQuizzesProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
@@ -27,7 +29,14 @@ export function RecommendedQuizzes({ quizzes }: RecommendedQuizzesProps) {
       </div>
       
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {quizzes.map((quiz) => (
+        {isLoading ? (
+          // Show skeleton loaders when loading
+          <>
+            {[1, 2, 3].map((i) => (
+              <QuizCardSkeleton key={i} />
+            ))}
+          </>
+        ) : quizzes.map((quiz) => (
           <Card key={quiz.id} className="overflow-hidden">
             <div className="h-32 bg-gray-200 dark:bg-gray-700 relative">
               <div className="absolute inset-0 flex items-center justify-center">
