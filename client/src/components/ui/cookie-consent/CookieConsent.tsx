@@ -37,13 +37,13 @@ export const CookieConsent: React.FC = () => {
     <AnimatePresence>
       {isVisible && (
         <motion.div 
-          className="fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 bg-background/80 backdrop-blur-sm"
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          exit={{ y: 100, opacity: 0 }}
+          className="fixed inset-0 z-50 flex items-end justify-center p-4 md:p-6 bg-background/80 backdrop-blur-sm"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         >
-          <Card className="w-full max-w-4xl mx-auto border shadow-lg overflow-hidden">
+          <Card className="w-full max-w-4xl mx-auto border shadow-lg overflow-hidden max-h-[90vh] overflow-y-auto">
             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-primary-300 via-primary-500 to-primary-700"></div>
             <CardHeader className="pb-2">
               <div className="flex justify-between items-center">
@@ -87,12 +87,12 @@ export const CookieConsent: React.FC = () => {
                 </div>
               </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-3 pt-3 pb-3">
+            <CardFooter className="flex flex-wrap justify-end gap-3 pt-3 pb-3">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button 
                   variant="outline" 
                   onClick={declineCookies}
-                  className="rounded-full px-4 border-gray-300 hover:border-gray-400 transition-colors"
+                  className="rounded-full px-4 border-gray-300 hover:border-gray-400 transition-colors w-full sm:w-auto"
                 >
                   Essential cookies only
                 </Button>
@@ -100,7 +100,7 @@ export const CookieConsent: React.FC = () => {
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                 <Button 
                   onClick={acceptCookies}
-                  className="rounded-full px-4 shadow-sm hover:shadow transition-all"
+                  className="rounded-full px-4 shadow-sm hover:shadow transition-all w-full sm:w-auto"
                 >
                   Accept all cookies
                 </Button>
