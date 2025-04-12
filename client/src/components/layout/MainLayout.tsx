@@ -4,6 +4,7 @@ import { useUserData } from "@/lib/userData";
 import { MobileHeader } from "@/components/layout/MobileHeader";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
+import { DailyGoalDialog } from "@/components/dashboard/DailyGoalDialog"; 
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -42,6 +43,9 @@ export function MainLayout({
       </main>
       
       <MobileNavBar currentRoute={currentRoute} />
+      
+      {/* Daily Goal Dialog - will automatically handle its visibility */}
+      {user && <DailyGoalDialog />}
     </>
   );
 }
