@@ -12,6 +12,7 @@ import Admin from "@/pages/Admin";
 import UserView from "@/pages/admin/UserView";
 import UserEdit from "@/pages/admin/UserEdit";
 import QuizBuilder from "@/pages/admin/QuizBuilder";
+import EditQuiz from "@/pages/admin/EditQuiz";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Quizzes from "@/pages/Quizzes";
@@ -106,6 +107,13 @@ function Router() {
         <RequireAdmin>
           <QuizBuilder />
         </RequireAdmin>
+      </Route>
+      <Route path="/admin/quizzes/:id/edit">
+        {params => (
+          <RequireAdmin>
+            <EditQuiz />
+          </RequireAdmin>
+        )}
       </Route>
       
       {/* Fallback to 404 */}

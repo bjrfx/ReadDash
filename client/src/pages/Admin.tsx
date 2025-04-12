@@ -28,6 +28,7 @@ export default function Admin() {
   const [adminStats, setAdminStats] = useState(null);
   const [users, setUsers] = useState(null);
   const [passages, setPassages] = useState(null);
+  const [quizzes, setQuizzes] = useState(null);
   const [loading, setLoading] = useState(true);
   
   // Fetch data from Firebase
@@ -61,6 +62,16 @@ export default function Admin() {
         }));
         setPassages(passagesData);
         
+        // Fetch quizzes from Firebase
+        const quizzesSnapshot = await getDocs(collection(db, "quizzes"));
+        const quizzesData = quizzesSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          // Format dates if they exist
+          createdAt: doc.data().createdAt ? doc.data().createdAt.toDate().toLocaleDateString('en-US') : 'Unknown'
+        }));
+        setQuizzes(quizzesData);
+        
         // Calculate admin stats
         const stats = {
           activeUsers: usersData.length,
@@ -74,8 +85,8 @@ export default function Admin() {
         };
         
         // Count quizzes taken
-        const quizzesSnapshot = await getDocs(collection(db, "quizResults"));
-        stats.quizzesTaken = quizzesSnapshot.size;
+        const quizResultsSnapshot = await getDocs(collection(db, "quizResults"));
+        stats.quizzesTaken = quizResultsSnapshot.size;
         
         // Count issues reported
         const issuesSnapshot = await getDocs(collection(db, "issues"));
@@ -176,6 +187,40 @@ export default function Admin() {
   // Passage actions
   const handleEditPassage = (passageId: string) => {
     setLocation(`/admin/passages/${passageId}/edit`);
+  };
+  
+  // Quiz actions
+  const handleEditQuiz = (quizId: string) => {
+    setLocation(`/admin/quizzes/${quizId}/edit`);
+  };
+  
+  const handleDeleteQuiz = async (quizId: string) => {
+    try {
+      // Delete the quiz from Firestore
+      await deleteDoc(doc(db, "quizzes", quizId));
+      
+      // Update local state
+      toast({
+        title: "Quiz deleted",
+        description: "The quiz has been successfully deleted.",
+      });
+      
+      // Refresh quizzes data by fetching quizzes again
+      const quizzesSnapshot = await getDocs(collection(db, "quizzes"));
+      const quizzesData = quizzesSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      
+      // Update component state with the new data
+      setQuizzes(quizzesData);
+    } catch (error) {
+      toast({
+        title: "Delete failed",
+        description: error instanceof Error ? error.message : "Failed to delete quiz",
+        variant: "destructive",
+      });
+    }
   };
   
   const handleDeletePassage = async (passageId: string) => {
@@ -400,8 +445,11 @@ export default function Admin() {
           
           <ContentManagement 
             passages={passageData} 
+            quizzes={quizzes || []}
             onEditPassage={handleEditPassage} 
-            onDeletePassage={handleDeletePassage} 
+            onDeletePassage={handleDeletePassage}
+            onEditQuiz={handleEditQuiz}
+            onDeleteQuiz={handleDeleteQuiz}
             onGenerateQuiz={handleGenerateQuiz}
             onViewAllPassages={handleViewAllPassages}
           />

@@ -16,20 +16,37 @@ interface Passage {
   questionCount: number;
 }
 
+interface Quiz {
+  id: string;
+  title: string;
+  readingLevel: string;
+  category: string;
+  questionCount: number;
+  createdAt?: any;
+}
+
 interface ContentManagementProps {
   passages: Passage[];
+  quizzes?: Quiz[];
   onEditPassage: (id: string) => void;
   onDeletePassage: (id: string) => void;
+  onEditQuiz?: (id: string) => void;
+  onDeleteQuiz?: (id: string) => void;
   onGenerateQuiz: (request: GenerateQuizRequest) => Promise<void>;
   onViewAllPassages: () => void;
+  onViewAllQuizzes?: () => void;
 }
 
 export function ContentManagement({ 
   passages, 
+  quizzes = [],
   onEditPassage, 
-  onDeletePassage, 
+  onDeletePassage,
+  onEditQuiz,
+  onDeleteQuiz, 
   onGenerateQuiz,
-  onViewAllPassages
+  onViewAllPassages,
+  onViewAllQuizzes
 }: ContentManagementProps) {
   const { toast } = useToast();
   const [isGenerating, setIsGenerating] = useState(false);
@@ -231,6 +248,58 @@ export function ContentManagement({
               {isGenerating ? 'Generating...' : 'Generate Reading & Questions'}
             </Button>
           </form>
+        </CardContent>
+      </Card>
+
+      {/* Quizzes List */}
+      <Card>
+        <CardHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
+          <h3 className="font-heading text-lg font-medium">Quizzes</h3>
+        </CardHeader>
+        
+        <CardContent className="p-5">
+          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+            {quizzes.map((quiz) => (
+              <li key={quiz.id} className="py-3 flex justify-between items-center">
+                <div>
+                  <h4 className="font-medium">{quiz.title}</h4>
+                  <div className="flex space-x-2 text-xs mt-1">
+                    <span className="text-gray-500 dark:text-gray-400">Level {quiz.readingLevel}</span>
+                    <span className="text-gray-500 dark:text-gray-400">•</span>
+                    <span className="text-gray-500 dark:text-gray-400">{quiz.category}</span>
+                    <span className="text-gray-500 dark:text-gray-400">•</span>
+                    <span className="text-gray-500 dark:text-gray-400">{quiz.questionCount} questions</span>
+                  </div>
+                </div>
+                <div className="flex space-x-2">
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
+                    onClick={() => onEditQuiz && onEditQuiz(quiz.id)}
+                  >
+                    <PencilIcon className="h-4 w-4" />
+                  </Button>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
+                    onClick={() => onDeleteQuiz && onDeleteQuiz(quiz.id)}
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          
+          <Button 
+            variant="outline" 
+            className="mt-4 w-full"
+            onClick={onViewAllQuizzes}
+          >
+            View All Quizzes
+          </Button>
         </CardContent>
       </Card>
     </div>
