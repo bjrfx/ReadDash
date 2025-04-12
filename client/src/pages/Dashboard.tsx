@@ -7,10 +7,134 @@ import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { ProgressCharts } from "@/components/dashboard/ProgressCharts";
 import { AchievementsList } from "@/components/dashboard/AchievementsList";
 import { RecommendedQuizzes } from "@/components/dashboard/RecommendedQuizzes";
-import { Flame, Brain, Rocket, BookOpen } from "lucide-react";
+import { Flame, Brain, Rocket, BookOpen, Award, Clock, Check, Target, TrendingUp, Medal, ThumbsUp, Zap, Heart, Star, Lightbulb } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, limit, orderBy, doc, getDoc, Timestamp } from "firebase/firestore";
+
+// Define all available achievements with their details
+const ALL_ACHIEVEMENTS = [
+  {
+    id: "streak-5",
+    title: "5-Day Streak",
+    description: "Completed quizzes for 5 days in a row",
+    icon: <Flame className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-primary-500 to-secondary-600",
+    category: "consistency"
+  },
+  {
+    id: "streak-10",
+    title: "10-Day Streak",
+    description: "Completed quizzes for 10 days in a row",
+    icon: <Flame className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-primary-500 to-secondary-600",
+    category: "consistency"
+  },
+  {
+    id: "streak-30",
+    title: "Monthly Master",
+    description: "Completed quizzes for 30 days in a row",
+    icon: <Flame className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-primary-500 to-secondary-600",
+    category: "consistency"
+  },
+  {
+    id: "perfect-5",
+    title: "Knowledge Master",
+    description: "Scored 100% on 5 consecutive quizzes",
+    icon: <Brain className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-green-500 to-emerald-600",
+    category: "accuracy"
+  },
+  {
+    id: "level-up",
+    title: "Level Up",
+    description: "Advanced to a higher reading level",
+    icon: <Rocket className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-amber-500 to-orange-600",
+    category: "progress"
+  },
+  {
+    id: "passages-20",
+    title: "Bookworm",
+    description: "Completed 20 reading passages",
+    icon: <BookOpen className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-blue-500 to-cyan-600",
+    category: "volume"
+  },
+  {
+    id: "perfect-50",
+    title: "Golden Reader",
+    description: "Earn 50 perfect scores",
+    icon: <Award className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-yellow-500 to-amber-600",
+    category: "accuracy"
+  },
+  {
+    id: "speed-10",
+    title: "Speed Reader",
+    description: "Complete 10 quizzes in under 3 minutes each",
+    icon: <Clock className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-red-500 to-rose-600",
+    category: "speed"
+  },
+  {
+    id: "quizzes-100",
+    title: "Completionist",
+    description: "Complete 100 quizzes",
+    icon: <Check className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-indigo-500 to-purple-600",
+    category: "volume"
+  },
+  {
+    id: "daily-30",
+    title: "Goal Setter",
+    description: "Achieve your daily reading goal for 30 days",
+    icon: <Target className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-teal-500 to-green-600",
+    category: "consistency"
+  },
+  {
+    id: "top-10",
+    title: "Top 10%",
+    description: "Reach the top 10% of readers on the platform",
+    icon: <TrendingUp className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-purple-500 to-pink-600",
+    category: "rank"
+  },
+  {
+    id: "points-1000",
+    title: "Point Collector",
+    description: "Earn 1,000 knowledge points",
+    icon: <Star className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-yellow-500 to-orange-600",
+    category: "points"
+  },
+  {
+    id: "first-quiz",
+    title: "First Steps",
+    description: "Complete your first quiz",
+    icon: <Medal className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-blue-500 to-indigo-600",
+    category: "milestones"
+  },
+  {
+    id: "variety-5",
+    title: "Well-Rounded Reader",
+    description: "Complete quizzes in 5 different categories",
+    icon: <Lightbulb className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-purple-500 to-violet-600",
+    category: "diversity"
+  },
+  {
+    id: "challenge-complete",
+    title: "Challenge Accepted",
+    description: "Complete a reading challenge",
+    icon: <Zap className="h-6 w-6" />,
+    bgClass: "bg-gradient-to-br from-pink-500 to-rose-600",
+    category: "challenges"
+  }
+];
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -36,6 +160,8 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         console.log("Fetching user data from Firestore...");
+        if (!user?.uid) return null;
+        
         const userDocRef = doc(db, "users", user.uid);
         const userDoc = await getDoc(userDocRef);
         
@@ -129,10 +255,68 @@ export default function Dashboard() {
     enabled: !!user,
   });
   
-  // Fetch achievements
-  const { data: achievements, isLoading: achievementsLoading } = useQuery({
-    queryKey: ['/api/user/achievements'],
-    enabled: !!user,
+  // Fetch real user achievements from Firestore
+  const { data: userAchievements, isLoading: achievementsLoading } = useQuery({
+    queryKey: ['userAchievements', user?.uid],
+    enabled: !!user?.uid,
+    queryFn: async () => {
+      try {
+        console.log("Fetching real user achievements from Firestore...");
+        
+        const achievementsRef = collection(db, "achievements");
+        const achievementsQuery = query(
+          achievementsRef,
+          where("userId", "==", user.uid),
+          orderBy("earnedAt", "desc"),
+          limit(4) // Limit to 4 most recent achievements for dashboard
+        );
+        
+        const snapshot = await getDocs(achievementsQuery);
+        console.log(`Found ${snapshot.docs.length} achievements for dashboard`);
+        
+        if (snapshot.empty) {
+          console.log("No achievements found for this user");
+          return [];
+        }
+        
+        // Map the achievements data to our required format
+        return snapshot.docs.map(doc => {
+          const data = doc.data();
+          console.log(`Achievement data for ${doc.id}:`, data);
+          
+          // Find the achievement definition in our ALL_ACHIEVEMENTS array
+          const achievementDef = ALL_ACHIEVEMENTS.find(a => a.id === data.achievementId);
+          
+          if (!achievementDef) {
+            console.warn(`Achievement definition not found for ${data.achievementId}`);
+            return null;
+          }
+          
+          // Format the earned date
+          const earnedDate = data.earnedAt?.toDate();
+          const formattedDate = earnedDate 
+            ? new Date(earnedDate).toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+              }) 
+            : 'Unknown date';
+          
+          return {
+            id: data.achievementId,
+            title: achievementDef.title,
+            description: achievementDef.description,
+            icon: achievementDef.icon,
+            bgClass: achievementDef.bgClass,
+            earnedAt: earnedDate,
+            date: formattedDate
+          };
+        }).filter(Boolean); // Remove any null values
+      } catch (error) {
+        console.error("Error fetching achievements:", error);
+        return [];
+      }
+    }
   });
   
   // Fetch recommended quizzes from Firestore
@@ -435,6 +619,7 @@ export default function Dashboard() {
     { id: "5", label: "9A", status: "goal" as const },
   ];
   
+  // Default achievements to use when no data is available
   const defaultAchievements = [
     {
       id: "1",
@@ -511,14 +696,6 @@ export default function Dashboard() {
     quizzesThisWeek: quizCompletionData?.quizzesThisWeek || defaultStats.quizzesThisWeek,
   };
   
-  // Prepare achievements data for the component
-  const achievementsData = achievements || defaultAchievements;
-  
-  // Prepare quizzes data for the component - use the fetched data if available
-  const quizzesData = recommendedQuizzes?.length > 0 
-    ? recommendedQuizzes 
-    : quizzesLoading ? [] : defaultQuizzes;
-  
   // Get reading level progress using real data from Firestore
   const readingLevels = userStats?.readingLevels || readingLevelData?.readingLevels || defaultReadingLevels;
   const currentProgress = readingLevelData?.currentProgress || userStats?.currentProgress || 78;
@@ -541,6 +718,11 @@ export default function Dashboard() {
     return testData;
   };
   
+  // Prepare quizzes data for the component - use the fetched data if available
+  const quizzesData = recommendedQuizzes?.length > 0 
+    ? recommendedQuizzes 
+    : quizzesLoading ? [] : defaultQuizzes;
+
   return (
     <>
       <MobileHeader user={user} userLevel={stats.readingLevel} notificationCount={3} />
@@ -556,9 +738,12 @@ export default function Dashboard() {
             currentProgress={currentProgress} 
           />
           
-          <AchievementsList achievements={achievementsData} />
+          <AchievementsList 
+            achievements={userAchievements?.length > 0 ? userAchievements : defaultAchievements} 
+            loading={achievementsLoading} 
+          />
           
-          <RecommendedQuizzes quizzes={quizzesData} />
+          <RecommendedQuizzes quizzes={quizzesData?.length > 0 ? quizzesData : []} />
         </div>
       </main>
       
