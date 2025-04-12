@@ -13,20 +13,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
-import { 
-  Loader2, 
-  Calendar, 
-  ChevronRight, 
-  ArrowUpRight, 
-  Bookmark, 
-  ChevronDown,
-  RefreshCw
-} from "lucide-react";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark } from "lucide-react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
 
@@ -41,8 +28,6 @@ interface QuizHistoryItem {
   readingLevel: string;
   category: string;
   timeSpent: number;
-  retakeCount?: number;
-  allAttempts?: QuizHistoryItem[];
 }
 
 export default function History() {
@@ -84,9 +69,7 @@ export default function History() {
           };
         });
 
-        // Process retakes - group by quizId and keep only highest score as main entry
-        const processedItems = processQuizRetakes(quizHistoryItems);
-        setHistoryData(processedItems);
+        setHistoryData(quizHistoryItems);
       } catch (error) {
         console.error("Error fetching quiz history:", error);
         setHistoryData([]);
@@ -97,41 +80,6 @@ export default function History() {
 
     fetchQuizHistory();
   }, [user]);
-
-  // Process quiz retakes - group by quizId, keep highest score attempt as main
-  const processQuizRetakes = (items: QuizHistoryItem[]): QuizHistoryItem[] => {
-    const quizMap = new Map<string, QuizHistoryItem[]>();
-    
-    // Group attempts by quizId
-    items.forEach(item => {
-      if (!quizMap.has(item.quizId)) {
-        quizMap.set(item.quizId, []);
-      }
-      quizMap.get(item.quizId)?.push(item);
-    });
-    
-    // For each quizId, find the highest score attempt and mark it as main
-    const processedItems: QuizHistoryItem[] = [];
-    
-    quizMap.forEach(attempts => {
-      if (attempts.length === 1) {
-        // Only one attempt, no retakes
-        processedItems.push(attempts[0]);
-      } else {
-        // Sort attempts by score (highest first)
-        const sortedAttempts = [...attempts].sort((a, b) => b.score - a.score);
-        const bestAttempt = { ...sortedAttempts[0] };
-        
-        // Add retake count and other attempts
-        bestAttempt.retakeCount = attempts.length - 1;
-        bestAttempt.allAttempts = sortedAttempts.slice(1);
-        processedItems.push(bestAttempt);
-      }
-    });
-    
-    // Sort by date (most recent first)
-    return processedItems.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  };
 
   // Format time in MM:SS format
   const formatTime = (seconds: number) => {
@@ -158,14 +106,48 @@ export default function History() {
     return grouped;
   };
 
-  // Get current month quiz count
+  // Get unique quizzes count (exclude retakes)
+  const getUniqueQuizzesCount = (items: QuizHistoryItem[]) => {
+    const uniqueQuizIds = new Set(items.map(item => item.quizId));
+    return uniqueQuizIds.size;
+  };
+
+  // Get average score using best attempt for each unique quiz
+  const getAverageScore = (items: QuizHistoryItem[]) => {
+    if (items.length === 0) return 0;
+    
+    // Group attempts by quizId
+    const quizAttempts: Record<string, QuizHistoryItem[]> = {};
+    items.forEach(item => {
+      if (!quizAttempts[item.quizId]) {
+        quizAttempts[item.quizId] = [];
+      }
+      quizAttempts[item.quizId].push(item);
+    });
+    
+    // Get best score for each quiz
+    const bestScores = Object.values(quizAttempts).map(attempts => {
+      return Math.max(...attempts.map(a => a.score));
+    });
+    
+    // Calculate average of best scores
+    const sum = bestScores.reduce((total, score) => total + score, 0);
+    return Math.round(sum / bestScores.length);
+  };
+
+  // Get current month unique quiz count
   const getCurrentMonthQuizCount = (items: QuizHistoryItem[]) => {
     const currentMonth = new Date().getMonth();
     const currentYear = new Date().getFullYear();
-    return items.filter(item => {
+    
+    // Filter to current month items
+    const currentMonthItems = items.filter(item => {
       const date = new Date(item.date);
       return date.getMonth() === currentMonth && date.getFullYear() === currentYear;
-    }).length;
+    });
+    
+    // Get unique quiz count for current month
+    return getUniqueQuizzesCount(currentMonthItems);
   };
   
   // Use fetched data or default while loading
@@ -204,15 +186,13 @@ export default function History() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Quizzes</p>
-                <p className="text-3xl font-bold">{quizHistory.length}</p>
+                <p className="text-3xl font-bold">{getUniqueQuizzesCount(quizHistory)}</p>
               </div>
               
               <div className="text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Average Score</p>
                 <p className="text-3xl font-bold">
-                  {quizHistory.length > 0 
-                    ? Math.round(quizHistory.reduce((sum, item) => sum + item.score, 0) / quizHistory.length)
-                    : 0}%
+                  {getAverageScore(quizHistory)}%
                 </p>
               </div>
               
@@ -249,85 +229,32 @@ export default function History() {
                 </TableHeader>
                 <TableBody>
                   {items.map((item) => (
-                    <Collapsible key={item.id} className="w-full">
-                      <TableRow>
-                        <TableCell className="font-medium">
-                          {item.title}
-                          {item.retakeCount && item.retakeCount > 0 && (
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              <RefreshCw className="mr-1 h-3 w-3" />
-                              {item.retakeCount} retake{item.retakeCount > 1 ? 's' : ''}
-                            </Badge>
-                          )}
-                        </TableCell>
-                        <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
-                        <TableCell>
-                          <Badge 
-                            className={
-                              item.score >= 90 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" :
-                              item.score >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" :
-                              "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
-                            }
-                          >
-                            {item.score}% ({item.correctAnswers}/{item.totalQuestions})
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="hidden md:table-cell">{item.readingLevel}</TableCell>
-                        <TableCell className="hidden md:table-cell">{item.category}</TableCell>
-                        <TableCell className="hidden md:table-cell">{formatTime(item.timeSpent)}</TableCell>
-                        <TableCell className="flex items-center">
-                          {item.allAttempts && item.allAttempts.length > 0 && (
-                            <CollapsibleTrigger asChild>
-                              <Button variant="ghost" size="sm" className="mr-2">
-                                <ChevronDown className="h-4 w-4" />
-                              </Button>
-                            </CollapsibleTrigger>
-                          )}
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/quiz-results/${item.quizId}`}>
-                              <ChevronRight className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                      
-                      {item.allAttempts && item.allAttempts.length > 0 && (
-                        <CollapsibleContent>
-                          {item.allAttempts.map((attempt, index) => (
-                            <TableRow key={attempt.id} className="bg-gray-50 dark:bg-gray-800/50">
-                              <TableCell className="pl-8 text-sm text-gray-500">
-                                Retake {index + 1}
-                              </TableCell>
-                              <TableCell className="text-sm">
-                                {new Date(attempt.date).toLocaleDateString()}
-                              </TableCell>
-                              <TableCell>
-                                <Badge 
-                                  variant="outline"
-                                  className={
-                                    attempt.score >= 90 ? "bg-green-50 text-green-800 dark:bg-green-900/50 dark:text-green-300" :
-                                    attempt.score >= 70 ? "bg-blue-50 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300" :
-                                    "bg-orange-50 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300"
-                                  }
-                                >
-                                  {attempt.score}% ({attempt.correctAnswers}/{attempt.totalQuestions})
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="hidden md:table-cell">{attempt.readingLevel}</TableCell>
-                              <TableCell className="hidden md:table-cell">{attempt.category}</TableCell>
-                              <TableCell className="hidden md:table-cell">{formatTime(attempt.timeSpent)}</TableCell>
-                              <TableCell>
-                                <Button variant="ghost" size="sm" asChild>
-                                  <Link href={`/quiz-results/${attempt.quizId}?attempt=${attempt.id}`}>
-                                    <ChevronRight className="h-4 w-4" />
-                                  </Link>
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </CollapsibleContent>
-                      )}
-                    </Collapsible>
+                    <TableRow key={item.id}>
+                      <TableCell className="font-medium">{item.title}</TableCell>
+                      <TableCell>{new Date(item.date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          className={
+                            item.score >= 90 ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" :
+                            item.score >= 70 ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" :
+                            "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300"
+                          }
+                        >
+                          {item.score}% ({item.correctAnswers}/{item.totalQuestions})
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">{item.readingLevel}</TableCell>
+                      <TableCell className="hidden md:table-cell">{item.category}</TableCell>
+                      <TableCell className="hidden md:table-cell">{formatTime(item.timeSpent)}</TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/quiz-results/${item.quizId}`}>
+                            <span className="sr-only">View details</span>
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>

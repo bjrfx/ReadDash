@@ -301,7 +301,7 @@ function QuizCard({ quiz }: { quiz: Quiz }) {
         )}
         {quiz.completed && (
           <Badge variant="secondary" className="absolute bottom-2 right-2 bg-green-500 text-white">
-            Scored {quiz.score ? `${quiz.score}%` : ''}
+            Completed {quiz.score ? `${quiz.score}%` : ''}
           </Badge>
         )}
       </div>
