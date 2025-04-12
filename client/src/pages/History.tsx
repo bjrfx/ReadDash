@@ -19,9 +19,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark, ChevronDown } from "lucide-react";
+import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark, ChevronDown, CheckCircle } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, getDocs, query, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuizHistoryItem {
   id: string;
@@ -34,12 +35,16 @@ interface QuizHistoryItem {
   readingLevel: string;
   category: string;
   timeSpent: number;
+  pointsEarned: number; // Add pointsEarned to track points per quiz
 }
 
 export default function History() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [historyData, setHistoryData] = useState<QuizHistoryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncingPoints, setSyncingPoints] = useState(false);
+  const [pointsSynced, setPointsSynced] = useState(false);
 
   // Fetch user quiz history from Firestore
   useEffect(() => {
@@ -61,6 +66,25 @@ export default function History() {
         const quizResultsSnapshot = await getDocs(quizResultsQuery);
         const quizHistoryItems = quizResultsSnapshot.docs.map(doc => {
           const data = doc.data();
+          // Debug log to inspect data
+          console.log(`Quiz result data for ${doc.id}:`, data);
+          
+          // Convert pointsEarned to a number - sometimes it might be stored as string
+          let points = 0;
+          if (data.pointsEarned !== undefined) {
+            points = Number(data.pointsEarned);
+          } else if (data.points !== undefined) {
+            // Some documents might use "points" instead of "pointsEarned"
+            points = Number(data.points);
+          } else {
+            // If no points are stored, calculate an estimate based on score and reading level
+            const readingLevelNum = parseInt(data.readingLevel?.replace(/[A-Z]/g, '') || '5');
+            const scoreFactor = Math.round((data.score || 0) / 10);
+            const levelFactor = readingLevelNum * 2;
+            points = 10 + levelFactor + scoreFactor;
+            console.log(`Estimated points for quiz ${doc.id}: ${points}`);
+          }
+
           return {
             id: doc.id,
             quizId: data.quizId,
@@ -71,11 +95,17 @@ export default function History() {
             totalQuestions: data.totalQuestions || 0,
             readingLevel: data.readingLevel || "N/A",
             category: data.category || "Uncategorized",
-            timeSpent: data.timeSpent || 0
+            timeSpent: data.timeSpent || 0,
+            pointsEarned: points
           };
         });
 
         setHistoryData(quizHistoryItems);
+        
+        // After fetching history, check and sync points
+        if (quizHistoryItems.length > 0) {
+          checkAndSyncPoints(quizHistoryItems);
+        }
       } catch (error) {
         console.error("Error fetching quiz history:", error);
         setHistoryData([]);
@@ -86,6 +116,97 @@ export default function History() {
 
     fetchQuizHistory();
   }, [user]);
+
+  // Check if total points from history match Firestore and sync if needed
+  const checkAndSyncPoints = async (historyItems: QuizHistoryItem[]) => {
+    if (!user?.uid) return;
+    
+    try {
+      // Get current user data from Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      const userDoc = await getDoc(userDocRef);
+      
+      if (!userDoc.exists()) {
+        console.log("User document not found in Firestore");
+        return;
+      }
+      
+      const userData = userDoc.data();
+      const storedPoints = userData.knowledgePoints || 0;
+      
+      // Calculate correct total points from history (best attempt for each quiz)
+      const calculatedPoints = calculateTotalPointsFromHistory(historyItems);
+      
+      console.log("Points check:", { 
+        storedInFirestore: storedPoints, 
+        calculatedFromHistory: calculatedPoints 
+      });
+      
+      // If there's a mismatch, update Firestore
+      if (storedPoints !== calculatedPoints) {
+        console.log("Points mismatch detected. Updating Firestore...");
+        setSyncingPoints(true);
+        
+        // Update user document with correct points
+        await updateDoc(userDocRef, {
+          knowledgePoints: calculatedPoints,
+          lastPointsSync: new Date()
+        });
+        
+        setSyncingPoints(false);
+        setPointsSynced(true);
+        
+        // Show success toast
+        toast({
+          title: "Points synchronized",
+          description: `Your knowledge points have been updated to ${calculatedPoints}`,
+          variant: "default",
+        });
+        
+        console.log("Points successfully synchronized");
+      } else {
+        console.log("Points are already in sync");
+      }
+    } catch (error) {
+      console.error("Error synchronizing points:", error);
+      setSyncingPoints(false);
+      
+      // Show error toast
+      toast({
+        title: "Synchronization failed",
+        description: "There was an error updating your knowledge points",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // Calculate total points from history considering only best attempts
+  const calculateTotalPointsFromHistory = (items: QuizHistoryItem[]) => {
+    // Group all attempts by quizId
+    const quizAttempts: Record<string, QuizHistoryItem[]> = {};
+    
+    items.forEach(item => {
+      if (!quizAttempts[item.quizId]) {
+        quizAttempts[item.quizId] = [];
+      }
+      quizAttempts[item.quizId].push(item);
+    });
+    
+    // Sum up the points from best attempts only
+    let totalPoints = 0;
+    
+    Object.values(quizAttempts).forEach(attempts => {
+      // Find the attempt with the highest score
+      const bestAttempt = attempts.reduce((best, current) => {
+        return current.score > best.score ? current : best;
+      }, attempts[0]);
+      
+      // Add points from best attempt
+      totalPoints += bestAttempt.pointsEarned || 0;
+    });
+    
+    return totalPoints;
+  };
 
   // Format time in MM:SS format
   const formatTime = (seconds: number) => {
@@ -156,6 +277,11 @@ export default function History() {
     return getUniqueQuizzesCount(currentMonthItems);
   };
 
+  // Get total knowledge points (from best attempts only)
+  const getTotalKnowledgePoints = (items: QuizHistoryItem[]) => {
+    return calculateTotalPointsFromHistory(items);
+  };
+
   // Group quizzes by quizId and find best attempt
   const groupQuizzesByIdWithBestAttempt = (items: QuizHistoryItem[]) => {
     const grouped: Record<string, {
@@ -215,7 +341,7 @@ export default function History() {
         {/* History Summary Card */}
         <Card className="mb-8">
           <CardContent className="p-5">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Total Quizzes</p>
                 <p className="text-3xl font-bold">{getUniqueQuizzesCount(quizHistory)}</p>
@@ -233,6 +359,21 @@ export default function History() {
                 <p className="text-3xl font-bold">
                   {getCurrentMonthQuizCount(quizHistory)}
                 </p>
+              </div>
+              
+              <div className="text-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">Knowledge Points</p>
+                <div className="flex items-center justify-center">
+                  <p className="text-3xl font-bold mr-2">
+                    {getTotalKnowledgePoints(quizHistory)}
+                  </p>
+                  {pointsSynced && (
+                    <CheckCircle className="h-5 w-5 text-green-500" />
+                  )}
+                  {isSyncingPoints && (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary-500" />
+                  )}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -260,6 +401,7 @@ export default function History() {
                     <TableHead className="hidden md:table-cell">Level</TableHead>
                     <TableHead className="hidden md:table-cell">Category</TableHead>
                     <TableHead className="hidden md:table-cell">Time</TableHead>
+                    <TableHead className="hidden md:table-cell">Points</TableHead>
                     <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -283,6 +425,7 @@ export default function History() {
                         <TableCell className="hidden md:table-cell">{bestAttempt.readingLevel}</TableCell>
                         <TableCell className="hidden md:table-cell">{bestAttempt.category}</TableCell>
                         <TableCell className="hidden md:table-cell">{formatTime(bestAttempt.timeSpent)}</TableCell>
+                        <TableCell className="hidden md:table-cell">{bestAttempt.pointsEarned}</TableCell>
                         <TableCell>
                           <div className="flex">
                             <Button variant="ghost" size="sm" asChild>
@@ -334,6 +477,7 @@ export default function History() {
                                               <TableCell className="hidden md:table-cell">{attempt.readingLevel}</TableCell>
                                               <TableCell className="hidden md:table-cell">{attempt.category}</TableCell>
                                               <TableCell className="hidden md:table-cell">{formatTime(attempt.timeSpent)}</TableCell>
+                                              <TableCell className="hidden md:table-cell">{attempt.pointsEarned}</TableCell>
                                               <TableCell>
                                                 <Button variant="ghost" size="sm" asChild>
                                                   <Link href={`/quiz-results/${attempt.quizId}`}>
