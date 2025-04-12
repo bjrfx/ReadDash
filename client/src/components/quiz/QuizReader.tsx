@@ -184,13 +184,13 @@ export function QuizReader({
                 className={`flex items-start p-3 border ${
                   userAnswers[questionId] === option.id
                     ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
-                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                    : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
                 } rounded-lg transition-colors`}
               >
                 <RadioGroupItem 
                   id={option.id} 
                   value={option.id} 
-                  className="mt-0.5 mr-3" 
+                  className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
                 />
                 <Label htmlFor={option.id} className="flex-1 cursor-pointer">
                   {option.text}
@@ -256,13 +256,13 @@ export function QuizReader({
               className={`flex items-start p-3 border ${
                 userAnswers[questionId] === 'true'
                   ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
-                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
               } rounded-lg transition-colors`}
             >
               <RadioGroupItem 
                 id={`${questionId}-true`} 
                 value="true" 
-                className="mt-0.5 mr-3" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
               />
               <Label htmlFor={`${questionId}-true`} className="flex-1 cursor-pointer">
                 True
@@ -272,13 +272,13 @@ export function QuizReader({
               className={`flex items-start p-3 border ${
                 userAnswers[questionId] === 'false'
                   ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
-                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
               } rounded-lg transition-colors`}
             >
               <RadioGroupItem 
                 id={`${questionId}-false`} 
                 value="false" 
-                className="mt-0.5 mr-3" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
               />
               <Label htmlFor={`${questionId}-false`} className="flex-1 cursor-pointer">
                 False
@@ -288,13 +288,13 @@ export function QuizReader({
               className={`flex items-start p-3 border ${
                 userAnswers[questionId] === 'not-given'
                   ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
-                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
               } rounded-lg transition-colors`}
             >
               <RadioGroupItem 
                 id={`${questionId}-not-given`} 
                 value="not-given" 
-                className="mt-0.5 mr-3" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
               />
               <Label htmlFor={`${questionId}-not-given`} className="flex-1 cursor-pointer">
                 Not Given
