@@ -10,10 +10,34 @@ import { RecommendedQuizzes } from "@/components/dashboard/RecommendedQuizzes";
 import { Flame, Brain, Rocket, BookOpen } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, limit, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, limit, orderBy, doc, getDoc } from "firebase/firestore";
 
 export default function Dashboard() {
   const { user } = useAuth();
+  
+  // Fetch user data including reading level from Firestore
+  const { data: userData, isLoading: userLoading } = useQuery({
+    queryKey: ['userData'],
+    enabled: !!user?.uid,
+    queryFn: async () => {
+      try {
+        console.log("Fetching user data from Firestore...");
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists()) {
+          console.log("User data:", userDoc.data());
+          return userDoc.data();
+        } else {
+          console.log("No user document found");
+          return null;
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        return null;
+      }
+    }
+  });
   
   // Fetch user stats
   const { data: userStats, isLoading: statsLoading } = useQuery({
@@ -221,7 +245,18 @@ export default function Dashboard() {
     }
   ];
   
-  const stats = userStats || defaultStats;
+  // Use real user data for reading level if available, otherwise fallback to default
+  const stats = {
+    ...defaultStats,
+    ...userStats,
+    // Override with real reading level from Firestore if available
+    readingLevel: userData?.readingLevel || defaultStats.readingLevel,
+    // For previous level, we could implement logic to determine it based on history
+    // or keep the default for now
+    previousLevel: userData?.previousLevel || defaultStats.previousLevel,
+    // Use real knowledge points if available
+    knowledgePoints: userData?.knowledgePoints || defaultStats.knowledgePoints,
+  };
   
   // Prepare achievements data for the component
   const achievementsData = achievements || defaultAchievements;
