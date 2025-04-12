@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { auth } from './firebase';
+import { auth, db } from './firebase';
 import { User as FirebaseUser, onAuthStateChanged } from 'firebase/auth';
 import { useLocation } from 'wouter';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Custom hook to manage authentication state
 export const useAuth = () => {
@@ -38,15 +39,12 @@ export const useAdmin = () => {
       }
 
       try {
-        // Check if user is admin by making request to our API
-        const res = await fetch('/api/users/check-admin', {
-          method: 'GET',
-          credentials: 'include',
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setIsAdmin(data.isAdmin);
+        // Check if user is admin by getting their role from Firestore
+        const userDocRef = doc(db, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+        
+        if (userDoc.exists() && userDoc.data().role === 'admin') {
+          setIsAdmin(true);
         } else {
           setIsAdmin(false);
         }
