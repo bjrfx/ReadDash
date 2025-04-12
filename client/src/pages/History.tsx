@@ -67,7 +67,7 @@ export default function History() {
         const quizHistoryItems = quizResultsSnapshot.docs.map(doc => {
           const data = doc.data();
           // Debug log to inspect data
-          console.log(`Quiz result data for ${doc.id}:`, data);
+          // console.log(`Quiz result data for ${doc.id}:`, data);
           
           // Convert pointsEarned to a number - sometimes it might be stored as string
           let points = 0;
@@ -82,7 +82,7 @@ export default function History() {
             const scoreFactor = Math.round((data.score || 0) / 10);
             const levelFactor = readingLevelNum * 2;
             points = 10 + levelFactor + scoreFactor;
-            console.log(`Estimated points for quiz ${doc.id}: ${points}`);
+            // console.log(`Estimated points for quiz ${doc.id}: ${points}`);
           }
 
           return {
@@ -137,14 +137,14 @@ export default function History() {
       // Calculate correct total points from history (best attempt for each quiz)
       const calculatedPoints = calculateTotalPointsFromHistory(historyItems);
       
-      console.log("Points check:", { 
-        storedInFirestore: storedPoints, 
-        calculatedFromHistory: calculatedPoints 
-      });
+      // console.log("Points check:", { 
+      //   storedInFirestore: storedPoints, 
+      //   calculatedFromHistory: calculatedPoints 
+      // });
       
       // If there's a mismatch, update Firestore
       if (storedPoints !== calculatedPoints) {
-        console.log("Points mismatch detected. Updating Firestore...");
+        // console.log("Points mismatch detected. Updating Firestore...");
         setSyncingPoints(true);
         
         // Update user document with correct points

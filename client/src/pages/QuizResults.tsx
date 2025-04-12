@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 interface QuizResultData {
   title: string;
@@ -34,55 +34,123 @@ export default function QuizResults() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   
-  // Safely parse URL query parameters
   useEffect(() => {
     const fetchQuizData = async () => {
-      if (!id) return;
+      if (!id || !user?.uid) {
+        // console.log("Missing required parameters:", { id, userId: user?.uid });
+        setIsLoading(false);
+        return;
+      }
       
       try {
         setIsLoading(true);
+        // console.log("Fetching quiz results for quizId:", id, "and userId:", user.uid);
         
-        // Get score and correct answers from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        const score = parseInt(urlParams.get('score') || '0');
-        const correctAnswers = parseInt(urlParams.get('correct') || '0');
-        const totalQuestions = parseInt(urlParams.get('total') || '0');
-        const timeSpent = parseInt(urlParams.get('time') || '120'); // Use the time passed from Quiz page
-        
-        console.log("URL Parameters:", { score, correctAnswers, totalQuestions, timeSpent });
-        
-        // Fetch the quiz details from Firestore
+        // First, fetch the quiz details to get title and other quiz metadata
         const quizRef = doc(db, "quizzes", id);
         const quizSnap = await getDoc(quizRef);
         
         if (!quizSnap.exists()) {
+          console.error("Quiz not found in Firestore with ID:", id);
           throw new Error("Quiz not found");
         }
         
         const quizData = quizSnap.data();
+        // console.log("Quiz data:", quizData);
         
-        // Calculate points based on score and quiz level
-        const readingLevelNum = parseInt(quizData.readingLevel?.replace(/[A-Z]/g, '') || '5');
+        // Query the quizResults collection
+        const quizResultsRef = collection(db, "quizResults");
+        const q = query(
+          quizResultsRef,
+          where("quizId", "==", id),
+          where("userId", "==", user.uid)
+        );
         
-        // Calculate points: base points (10) + level factor + score factor
-        const levelFactor = readingLevelNum * 2;
-        const scoreFactor = Math.round(score / 10);
-        const pointsEarned = 10 + levelFactor + scoreFactor;
+        const querySnapshot = await getDocs(q);
         
-        // Determine if level improved (simple logic for now)
-        const levelImproved = score >= 80;
+        if (querySnapshot.empty) {
+          console.error("No quiz results found for user:", user.uid, "and quiz:", id);
+          throw new Error("Quiz results not found");
+        }
         
-        // Set results data
+        // Get the most recent result or the one with the highest score
+        let bestResult = null;
+        
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          // console.log("Found quiz result:", data);
+          
+          // Initialize bestResult if it's the first one or update it if this result has a higher score
+          if (!bestResult || data.score > bestResult.score) {
+            bestResult = data;
+          }
+        });
+        
+        if (!bestResult) {
+          throw new Error("Could not process quiz results");
+        }
+        
+        // console.log("Using result data:", bestResult);
+        
+        // Calculate points based on score and quiz level if not present
+        let pointsEarned = bestResult.pointsEarned;
+        if (!pointsEarned && pointsEarned !== 0) {
+          const readingLevelNum = parseInt(quizData.readingLevel?.replace(/[A-Z]/g, '') || '5');
+          const levelFactor = readingLevelNum * 2;
+          const scoreFactor = Math.round(bestResult.score / 10);
+          pointsEarned = 10 + levelFactor + scoreFactor;
+          // console.log("Calculated points:", pointsEarned);
+        }
+        
+        // Get correct answers and total questions
+        const correctAnswers = bestResult.correctCount || 0;
+        const totalQuestions = bestResult.totalQuestions || 0;
+        
+        // Get time spent
+        const timeSpent = bestResult.timeSpent || 0;
+        
+        // For average time, we could fetch historical data, but use a placeholder for now
+        const averageTime = Math.round(timeSpent * 1.2);
+        
+        // Determine if level improved
+        const levelImproved = userData?.previousLevel !== userData?.readingLevel;
+        
+        // Calculate next level 
+        let nextLevel = undefined;
+        if (levelImproved && userData?.readingLevel) {
+          const currentLevelNum = parseInt(userData.readingLevel.replace(/[A-Z]/g, '') || '1');
+          const currentLevelLetter = userData.readingLevel.replace(/[0-9]/g, '') || 'A';
+          
+          if (currentLevelLetter === 'B') {
+            nextLevel = (currentLevelNum + 1).toString() + 'A';
+          } else {
+            nextLevel = currentLevelNum.toString() + 'B';
+          }
+        }
+        
+        // Important: The QuizResultsComponent expects score as a decimal (0-1)
+        // but Firestore stores it as a percentage (0-100)
+        const scoreForComponent = bestResult.score > 1 ? bestResult.score / 100 : bestResult.score;
+        
+        console.log("Setting results with score:", {
+          originalScore: bestResult.score,
+          processedScore: scoreForComponent,
+          correctAnswers,
+          totalQuestions,
+          pointsEarned
+        });
+        
+        // Set the results
         setResults({
           title: quizData.title || "Quiz",
-          score: score / 100, // Convert percentage back to decimal for component
+          score: scoreForComponent,
           correctAnswers,
-          totalQuestions: totalQuestions || quizData.questionCount || 5,
+          totalQuestions,
           pointsEarned,
           timeSpent,
-          averageTime: Math.round(timeSpent * 1.2), // Example average (20% longer than current time)
+          averageTime,
           levelImproved,
-          nextLevel: levelImproved ? (readingLevelNum + 1).toString() + "A" : undefined
+          nextLevel
         });
         
       } catch (err) {
@@ -94,7 +162,7 @@ export default function QuizResults() {
     };
     
     fetchQuizData();
-  }, [id]);
+  }, [id, user, userData]);
   
   // Format time in MM:SS format
   const formatTime = (seconds: number): string => {
