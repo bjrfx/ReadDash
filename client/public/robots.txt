@@ -1,0 +1,9 @@
+# robots.txt for ReadDash
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /admin/*
+
+# Sitemap location
+Sitemap: https://readdash.com/sitemap.xml
