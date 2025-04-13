@@ -1,10 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
+import { routeSpecificCorsMiddleware } from "./routes-cors";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Apply route-specific CORS middleware
+app.use(routeSpecificCorsMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
