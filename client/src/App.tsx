@@ -24,6 +24,7 @@ import { useEffect } from "react";
 import { handleRedirectResult } from "./lib/firebase";
 import CookieConsent from "@/components/ui/cookie-consent/CookieConsent";
 import InstallPopup from "@/components/ui/install-popup";
+import { HelmetProvider } from 'react-helmet-async';
 
 function Router() {
   return (
@@ -145,12 +146,14 @@ function App() {
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router />
-      <CookieConsent />
-      <Toaster />
-      {/* <InstallPopup delay={5000} /> */}
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <Router />
+        <CookieConsent />
+        <Toaster />
+        {/* <InstallPopup delay={5000} /> */}
+      </QueryClientProvider>
+    </HelmetProvider>
   );
 }
 

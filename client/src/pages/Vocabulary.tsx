@@ -20,6 +20,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import SEO from "@/components/seo/SEO";
 
 // Interface for vocabulary items
 interface VocabularyItem {
@@ -248,6 +249,12 @@ export default function Vocabulary() {
   
   return (
     <>
+      <SEO 
+        title="My Vocabulary | ReadDash - Build Your Word Knowledge"
+        description="Save, organize, and learn new words from your reading sessions. Study definitions and improve your vocabulary with ReadDash's vocabulary management tool."
+        keywords="vocabulary builder, word definitions, reading vocabulary, language learning, vocabulary management"
+        canonicalUrl="/vocabulary"
+      />
       <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} />
       <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
       

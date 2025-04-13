@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import SEO from "@/components/seo/SEO";
 
 interface Quiz {
   id: string;
@@ -215,6 +216,12 @@ export default function Quizzes() {
   if (isLoading) {
     return (
       <MainLayout currentRoute="/quizzes">
+        <SEO 
+          title="Reading Quizzes | ReadDash - Improve Your Comprehension"
+          description="Browse and take interactive reading quizzes to improve your comprehension skills. Filter by category, reading level, and difficulty."
+          keywords="reading quizzes, reading comprehension, interactive quizzes, educational quizzes, reading practice"
+          canonicalUrl="/quizzes"
+        />
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
           <span className="ml-2">Loading quizzes...</span>
@@ -225,6 +232,12 @@ export default function Quizzes() {
   
   return (
     <MainLayout currentRoute="/quizzes">
+      <SEO 
+        title="Reading Quizzes | ReadDash - Improve Your Comprehension"
+        description="Browse and take interactive reading quizzes to improve your comprehension skills. Filter by category, reading level, and difficulty."
+        keywords="reading quizzes, reading comprehension, interactive quizzes, educational quizzes, reading practice"
+        canonicalUrl="/quizzes"
+      />
       <div className="p-4 sm:p-6">
         <div className="flex justify-between items-center mb-6">
           <h2 className="font-heading text-2xl font-bold">Reading Quizzes</h2>

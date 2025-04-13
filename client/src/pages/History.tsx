@@ -23,6 +23,7 @@ import { Loader2, Calendar, ChevronRight, ArrowUpRight, Bookmark, ChevronDown, C
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, where, orderBy, doc, getDoc, updateDoc } from "firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import SEO from "@/components/seo/SEO";
 
 interface QuizHistoryItem {
   id: string;
@@ -317,6 +318,12 @@ export default function History() {
   if (isLoading) {
     return (
       <MainLayout currentRoute="/history">
+        <SEO 
+          title="Quiz History | ReadDash - Track Your Reading Progress"
+          description="Review your quiz history, track your performance over time, and see your improvement in reading comprehension with detailed statistics."
+          keywords="reading history, quiz history, reading progress, learning analytics, reading statistics"
+          canonicalUrl="/history"
+        />
         <div className="flex items-center justify-center h-screen">
           <Loader2 className="h-8 w-8 animate-spin text-primary-500" />
           <span className="ml-2">Loading history...</span>
@@ -327,6 +334,12 @@ export default function History() {
   
   return (
     <MainLayout currentRoute="/history">
+      <SEO 
+        title="Quiz History | ReadDash - Track Your Reading Progress"
+        description="Review your quiz history, track your performance over time, and see your improvement in reading comprehension with detailed statistics."
+        keywords="reading history, quiz history, reading progress, learning analytics, reading statistics"
+        canonicalUrl="/history"
+      />
       <div className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-heading text-2xl font-bold">Quiz History</h2>

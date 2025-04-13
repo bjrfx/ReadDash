@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, limit } from "firebase/firestore";
 import { useState, useEffect } from "react";
+import SEO from "@/components/seo/SEO";
 
 // Define all available achievements
 const ALL_ACHIEVEMENTS = [
@@ -333,6 +334,12 @@ export default function Achievements() {
   
   return (
     <>
+      <SEO 
+        title="Achievements | ReadDash - Track Your Reading Milestones"
+        description="View your reading accomplishments, track progress towards new achievements, and set goals to improve your reading skills with ReadDash."
+        keywords="reading achievements, reading milestones, reading goals, reading progress tracking"
+        canonicalUrl="/achievements"
+      />
       <MobileHeader user={user} userLevel={userData?.readingLevel || "1A"} notificationCount={3} />
       <DesktopSidebar user={user} userLevel={userData?.readingLevel || "1A"} dailyGoalProgress={2} />
       

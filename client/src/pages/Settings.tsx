@@ -28,6 +28,7 @@ import {
   BookOpenCheck,
   Globe,
 } from "lucide-react";
+import SEO from "@/components/seo/SEO";
 
 export default function Settings() {
   const { user } = useAuth();
@@ -94,6 +95,12 @@ export default function Settings() {
   
   return (
     <MainLayout currentRoute="/settings">
+      <SEO 
+        title="Account Settings | ReadDash - Customize Your Experience"
+        description="Manage your account settings, notification preferences, and reading preferences to personalize your ReadDash experience."
+        keywords="account settings, user preferences, notification settings, reading preferences, dark mode, profile management"
+        canonicalUrl="/settings"
+      />
       <div className="p-4 sm:p-6 max-w-4xl mx-auto">
         <h2 className="font-heading text-2xl font-bold mb-6">Settings</h2>
         

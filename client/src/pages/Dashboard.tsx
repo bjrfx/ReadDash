@@ -12,6 +12,7 @@ import { Flame, Brain, Rocket, BookOpen, Award, Clock, Check, Target, TrendingUp
 import { useQuery } from "@tanstack/react-query";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs, limit, orderBy, doc, getDoc, Timestamp } from "firebase/firestore";
+import SEO from "@/components/seo/SEO";
 
 // Define all available achievements with their details
 const ALL_ACHIEVEMENTS = [
@@ -734,6 +735,12 @@ export default function Dashboard() {
   
   return (
     <>
+      <SEO 
+        title="Dashboard | ReadDash - Track Your Reading Progress"
+        description="Monitor your reading progress, view achievements, and get personalized quiz recommendations to improve your reading skills with ReadDash."
+        keywords="reading dashboard, reading progress, reading achievements, personalized quizzes, reading comprehension"
+        canonicalUrl="/"
+      />
       <MobileHeader user={user} userLevel={stats.readingLevel} notificationCount={3} />
       <DesktopSidebar user={user} userLevel={stats.readingLevel} dailyGoalProgress={2} />
       

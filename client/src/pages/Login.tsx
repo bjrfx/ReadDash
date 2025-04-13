@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import SEO from "@/components/seo/SEO";
 
 // Logo component with updated color (purple instead of blue)
 const Logo = () => (
@@ -306,6 +307,12 @@ export default function Login() {
   
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 p-4">
+      <SEO 
+        title="Sign In | ReadDash - Start Your Reading Journey"
+        description="Sign in to ReadDash to access personalized reading quizzes, track your progress, and improve your reading comprehension skills."
+        keywords="login, sign in, reading app login, reading comprehension tool, educational app"
+        canonicalUrl="/login"
+      />
       <div className="absolute top-4 right-4">
         <ThemeToggle />
       </div>
