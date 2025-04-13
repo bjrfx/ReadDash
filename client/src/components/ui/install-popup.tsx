@@ -57,9 +57,20 @@ const InstallPopup = ({ delay = 3000 }: InstallPopupProps) => {
 
   // Handle install button click
   const handleInstall = async () => {
+    if (!installPrompt) {
+      toast({
+        title: "Installation not available",
+        description: "Please try again when the install prompt appears.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       console.log('📱 Attempting to install app...');
-      const installed = await promptInstall(installPrompt);
+      const { outcome } = await installPrompt.prompt();
+      const installed = outcome === 'accepted';
+      
       if (installed) {
         console.log('📱 App installation accepted');
         toast({
@@ -99,7 +110,7 @@ const InstallPopup = ({ delay = 3000 }: InstallPopupProps) => {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogContent className="sm:max-w-md relative overflow-hidden border-primary/20 glow-primary">
+      <DialogContent className="sm:max-w-md relative overflow-hidden border-primary/20 glow-primary fixed left-[50%] top-[10%] translate-x-[-50%] translate-y-[0%] !mt-0">
         {/* Animated gradient border effect */}
         <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-r from-primary/30 via-secondary/30 to-primary/30 opacity-50 animate-gradient-x"></div>
@@ -134,7 +145,6 @@ const InstallPopup = ({ delay = 3000 }: InstallPopupProps) => {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button 
               onClick={handleInstall} 
-              className="button-pulse" 
               variant="glow"
             >
               <Download /> Install Now
