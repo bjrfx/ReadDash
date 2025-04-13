@@ -149,7 +149,7 @@ function App() {
       <Router />
       <CookieConsent />
       <Toaster />
-      <InstallPopup delay={5000} />
+      {/* <InstallPopup delay={5000} /> */}
     </QueryClientProvider>
   );
 }
