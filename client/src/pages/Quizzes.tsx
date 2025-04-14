@@ -480,7 +480,7 @@ function QuizCard({ quiz, onReset }: { quiz: Quiz; onReset?: (quizId: string) =>
         )}
         {quiz.completed && (
           <Badge variant="secondary" className="absolute bottom-2 right-2 bg-green-500 text-white">
-            Completed {quiz.score ? `${quiz.score}%` : ''}
+            Scored {quiz.score ? `${quiz.score}%` : ''}
           </Badge>
         )}
       </div>
