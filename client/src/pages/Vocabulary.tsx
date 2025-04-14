@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Loader2, BookOpen, X, Search, Volume2, Pencil } from "lucide-react";
+import { Loader2, BookOpen, X, Search, Volume2, Pencil, Plus } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useUserData } from "@/lib/userData";
@@ -277,6 +277,9 @@ export default function Vocabulary() {
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isAddWordDialogOpen, setIsAddWordDialogOpen] = useState(false);
+  const [newWord, setNewWord] = useState("");
+  const [addingWord, setAddingWord] = useState(false);
   
   // Fetch vocabulary words for the user
   useEffect(() => {
@@ -376,6 +379,76 @@ export default function Vocabulary() {
       });
     }
   };
+
+  // Add a new word to vocabulary
+  const addWord = async () => {
+    if (!user) return;
+    if (!newWord.trim()) {
+      toast({
+        title: "Word is required",
+        description: "Please enter a word to add to your vocabulary.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      setAddingWord(true);
+      
+      // Check if word already exists
+      const wordExists = vocabulary.some(item => 
+        item.word.toLowerCase() === newWord.trim().toLowerCase()
+      );
+      
+      if (wordExists) {
+        toast({
+          title: "Word already exists",
+          description: `"${newWord.trim()}" is already in your vocabulary list.`,
+          variant: "destructive",
+        });
+        setAddingWord(false);
+        return;
+      }
+      
+      // Create new vocabulary item
+      const newVocabularyItem: VocabularyItem = {
+        word: newWord.trim(),
+        addedAt: new Date().toISOString(),
+        quizId: "manual-entry",
+        quizTitle: "Manual Entry"
+      };
+      
+      // Add the new word to the vocabulary list
+      const updatedVocabulary = [...vocabulary, newVocabularyItem];
+      
+      // Update in Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      await updateDoc(userDocRef, {
+        vocabulary: updatedVocabulary
+      });
+      
+      // Update local state
+      setVocabulary(updatedVocabulary);
+      
+      // Reset form and close dialog
+      setNewWord("");
+      setIsAddWordDialogOpen(false);
+      
+      toast({
+        title: "Word added",
+        description: `"${newVocabularyItem.word}" has been added to your vocabulary list.`,
+      });
+    } catch (error) {
+      console.error("Error adding word:", error);
+      toast({
+        title: "Failed to add word",
+        description: "There was an error adding the word. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setAddingWord(false);
+    }
+  };
   
   return (
     <>
@@ -396,15 +469,24 @@ export default function Vocabulary() {
               Words you've saved from reading passages. Add more words by selecting text in quizzes and using the right-click menu.
             </p>
             
-            {/* Search Bar */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
-              <Input 
-                className="pl-10"
-                placeholder="Search vocabulary..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+            {/* Search and Add Word Bar */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
+                <Input 
+                  className="pl-10"
+                  placeholder="Search vocabulary..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              <Button 
+                onClick={() => setIsAddWordDialogOpen(true)} 
+                className="flex items-center"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Word
+              </Button>
             </div>
             
             {/* Vocabulary Grid */}
@@ -460,6 +542,63 @@ export default function Vocabulary() {
       </main>
       
       <MobileNavBar currentRoute="/vocabulary" />
+      
+      {/* Add Word Dialog */}
+      <Dialog open={isAddWordDialogOpen} onOpenChange={setIsAddWordDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Vocabulary Word</DialogTitle>
+            <DialogDescription>
+              Enter a new word to add to your vocabulary list.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="newWordInput" className="text-right">
+                Word
+              </Label>
+              <Input
+                id="newWordInput"
+                value={newWord}
+                onChange={(e) => setNewWord(e.target.value)}
+                className="col-span-3"
+                autoFocus
+                placeholder="Enter a word"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !addingWord) {
+                    e.preventDefault();
+                    addWord();
+                  }
+                }}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setNewWord("");
+                setIsAddWordDialogOpen(false);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={addWord} 
+              disabled={addingWord || !newWord.trim()}
+            >
+              {addingWord ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Add Word'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
