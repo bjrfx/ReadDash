@@ -191,15 +191,6 @@ const ComponentSidebar = ({ onAddComponent }) => {
             <Button 
               variant="outline" 
               className="w-full justify-start mt-2" 
-              onClick={() => onAddComponent('fill-blanks')}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Fill in the Blanks
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="w-full justify-start mt-2" 
               onClick={() => onAddComponent('true-false-not-given')}
             >
               <Plus className="h-4 w-4 mr-2" />
