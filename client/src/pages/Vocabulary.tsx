@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
-import { Loader2, BookOpen, X, Search, Volume2 } from "lucide-react";
+import { Loader2, BookOpen, X, Search, Volume2, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { useUserData } from "@/lib/userData";
@@ -20,6 +20,16 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import SEO from "@/components/seo/SEO";
 
 // Interface for vocabulary items
@@ -31,13 +41,17 @@ interface VocabularyItem {
 }
 
 // VocabularyCard component to handle individual word cards with definitions
-function VocabularyCard({ item, onRemove }: { 
+function VocabularyCard({ item, onRemove, onEdit }: { 
   item: VocabularyItem; 
   onRemove: (word: string) => Promise<void>;
+  onEdit: (oldWord: string, newWord: string) => Promise<void>;
 }) {
   const { data: definition, isLoading, error } = useWordDefinition(item.word);
   const [isOpen, setIsOpen] = useState(false);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editedWord, setEditedWord] = useState(item.word);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   // Find audio URL if available
   useEffect(() => {
@@ -66,6 +80,27 @@ function VocabularyCard({ item, onRemove }: {
     }).format(date);
   };
 
+  // Reset edited word when dialog opens
+  useEffect(() => {
+    if (isEditDialogOpen) {
+      setEditedWord(item.word);
+    }
+  }, [isEditDialogOpen, item.word]);
+
+  // Handle word edit submission
+  const handleEditSubmit = async () => {
+    if (editedWord.trim() && editedWord !== item.word) {
+      await onEdit(item.word, editedWord.trim());
+    }
+    setIsEditDialogOpen(false);
+  };
+
+  // Handle word delete confirmation
+  const handleDeleteConfirm = async () => {
+    await onRemove(item.word);
+    setIsDeleteDialogOpen(false);
+  };
+
   return (
     <Card className="overflow-hidden">
       <CardHeader className="pb-2">
@@ -84,15 +119,26 @@ function VocabularyCard({ item, onRemove }: {
               </Button>
             )}
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full -mt-1 -mr-1 text-gray-500 hover:text-red-500"
-            onClick={() => onRemove(item.word)}
-          >
-            <X className="h-4 w-4" />
-            <span className="sr-only">Remove</span>
-          </Button>
+          <div className="flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full -mt-1 text-gray-500 hover:text-blue-500"
+              onClick={() => setIsEditDialogOpen(true)}
+            >
+              <Pencil className="h-4 w-4" />
+              <span className="sr-only">Edit</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 rounded-full -mt-1 -mr-1 text-gray-500 hover:text-red-500"
+              onClick={() => setIsDeleteDialogOpen(true)}
+            >
+              <X className="h-4 w-4" />
+              <span className="sr-only">Remove</span>
+            </Button>
+          </div>
         </div>
         <CardDescription className="text-xs">
           Added on {formatDate(item.addedAt)}
@@ -169,6 +215,57 @@ function VocabularyCard({ item, onRemove }: {
           </Button>
         </Link>
       </CardFooter>
+
+      {/* Edit Word Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Edit Vocabulary Word</DialogTitle>
+            <DialogDescription>
+              Make changes to your vocabulary word. Click save when you're done.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="wordInput" className="text-right">
+                Word
+              </Label>
+              <Input
+                id="wordInput"
+                value={editedWord}
+                onChange={(e) => setEditedWord(e.target.value)}
+                className="col-span-3"
+                autoFocus
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleEditSubmit}>Save Changes</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove "{item.word}" from your vocabulary list?
+              This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -246,6 +343,39 @@ export default function Vocabulary() {
       });
     }
   };
+
+  // Edit a word in vocabulary
+  const editWord = async (oldWord: string, newWord: string) => {
+    if (!user) return;
+
+    try {
+      // Update the word in the vocabulary list
+      const updatedVocabulary = vocabulary.map(item => 
+        item.word === oldWord ? { ...item, word: newWord } : item
+      );
+
+      // Update in Firestore
+      const userDocRef = doc(db, "users", user.uid);
+      await updateDoc(userDocRef, {
+        vocabulary: updatedVocabulary
+      });
+
+      // Update local state
+      setVocabulary(updatedVocabulary);
+
+      toast({
+        title: "Word updated",
+        description: `"${oldWord}" has been updated to "${newWord}".`,
+      });
+    } catch (error) {
+      console.error("Error updating word:", error);
+      toast({
+        title: "Failed to update word",
+        description: "There was an error updating the word. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   return (
     <>
@@ -290,6 +420,7 @@ export default function Vocabulary() {
                     key={`${item.word}-${index}`} 
                     item={item}
                     onRemove={removeWord}
+                    onEdit={editWord}
                   />
                 ))}
               </div>
