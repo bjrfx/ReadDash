@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAdmin, useAuth } from "@/lib/hooks";
 import { MobileHeader } from "@/components/layout/MobileHeader";
@@ -7,7 +7,7 @@ import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, Save, ChevronLeft, Plus, Trash2, ArrowUp, ArrowDown, X, GripVertical, Settings } from "lucide-react";
 import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, getDocs, setDoc, doc } from "firebase/firestore";
 import { motion } from "framer-motion";
 import { v4 as uuidv4 } from "uuid";
 
@@ -869,10 +869,115 @@ export default function QuizBuilder() {
   const [components, setComponents] = useState<QuizComponent[]>([]);
   const [editingComponent, setEditingComponent] = useState<QuizComponent | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
+  const [newCategory, setNewCategory] = useState("");
   
   // Available reading levels and categories
   const readingLevels = ["5A", "5B", "6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B"];
-  const categories = ["Science", "History", "Literature", "Social Studies", "Arts", "Technology"];
+  const [categories, setCategories] = useState<string[]>(["Science", "History", "Literature", "Social Studies", "Arts", "Technology"]);
+  
+  // Fetch categories from Firestore
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        // Get categories from Firestore
+        const querySnapshot = await getDocs(collection(db, "categories"));
+        
+        if (querySnapshot.empty) {
+          console.log("No categories found in Firestore, creating default categories");
+          // Add default categories to Firestore
+          const defaultCategories = ["Science", "History", "Literature", "Social Studies", "Arts", "Technology"];
+          
+          // Create a batch to add all categories at once
+          const batch = db.batch();
+          
+          defaultCategories.forEach(category => {
+            const categoryDocRef = doc(db, "categories", category);
+            batch.set(categoryDocRef, { name: category });
+          });
+          
+          await batch.commit();
+          setCategories(defaultCategories);
+        } else {
+          // Get categories from Firestore
+          const fetchedCategories = querySnapshot.docs.map(doc => doc.id);
+          console.log("Fetched categories from Firestore:", fetchedCategories);
+          
+          if (fetchedCategories.length > 0) {
+            setCategories(fetchedCategories);
+            
+            // If the current category isn't in the fetched categories list,
+            // set it to the first available category
+            if (!fetchedCategories.includes(metadata.category)) {
+              handleMetadataChange('category', fetchedCategories[0]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error);
+        // Use default categories if fetching fails
+        toast({
+          title: "Warning",
+          description: "Could not fetch categories from the server. Using default categories.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchCategories();
+  }, [toast, metadata.category]);
+  
+  // Handle adding a new category
+  const handleAddCategory = async () => {
+    if (newCategory.trim() === "") {
+      toast({
+        title: "Error",
+        description: "Category name cannot be empty",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check if category already exists
+    if (categories.includes(newCategory.trim())) {
+      toast({
+        title: "Error",
+        description: "This category already exists",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // Add the new category to Firestore
+      await setDoc(doc(db, "categories", newCategory.trim()), {
+        name: newCategory.trim(),
+        createdAt: serverTimestamp()
+      });
+      
+      // Add the new category to the local state
+      setCategories(prev => [...prev, newCategory.trim()]);
+      
+      // Set the new category as the selected category
+      handleMetadataChange('category', newCategory.trim());
+      
+      // Reset and close dialog
+      setNewCategory("");
+      setIsAddCategoryDialogOpen(false);
+      
+      toast({
+        title: "Success",
+        description: `New category "${newCategory.trim()}" created and saved to database`,
+      });
+    } catch (error) {
+      console.error("Error saving category:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save category to database. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
   
   // Handle metadata change
   const handleMetadataChange = (field: keyof QuizMetadata, value: any) => {
@@ -1198,7 +1303,7 @@ export default function QuizBuilder() {
       </div>
     );
   }
-  
+
   return (
     <>
       <MobileHeader user={user} userLevel={user?.displayName ? user.displayName.charAt(0) : "U"} />
@@ -1251,21 +1356,41 @@ export default function QuizBuilder() {
                 
                 <div>
                   <Label htmlFor="category">Subject Category</Label>
-                  <Select 
-                    value={metadata.category}
-                    onValueChange={(value) => handleMetadataChange('category', value)}
-                  >
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Select category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                  <div className="flex items-center gap-2 mt-1">
+                    <Select 
+                      value={metadata.category}
+                      onValueChange={(value) => {
+                        if (value === "add-new") {
+                          setIsAddCategoryDialogOpen(true);
+                        } else {
+                          handleMetadataChange('category', value);
+                        }
+                      }}
+                      className="flex-1"
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value="add-new" className="text-primary">
+                          + Add New Category
                         </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => setIsAddCategoryDialogOpen(true)}
+                      title="Add New Category"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
                 
                 <div>
@@ -1351,6 +1476,8 @@ export default function QuizBuilder() {
         </div>
       </main>
       
+      <MobileNavBar currentRoute="/admin" />
+      
       {/* Component Edit Dialog */}
       <Dialog 
         open={!!editingComponent} 
@@ -1365,6 +1492,40 @@ export default function QuizBuilder() {
             onClose={() => setEditingComponent(null)}
           />
         )}
+      </Dialog>
+
+      {/* Add Category Dialog */}
+      <Dialog 
+        open={isAddCategoryDialogOpen} 
+        onOpenChange={setIsAddCategoryDialogOpen}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Label htmlFor="newCategory">Category Name</Label>
+            <Input
+              id="newCategory"
+              value={newCategory}
+              onChange={(e) => setNewCategory(e.target.value)}
+              className="mt-2"
+              placeholder="Enter category name"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setNewCategory("");
+              setIsAddCategoryDialogOpen(false);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddCategory}>
+              Add Category
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </>
   );
