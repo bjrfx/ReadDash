@@ -106,6 +106,13 @@ interface TrueFalseQuestion extends ComponentBase {
   correctAnswer: 'true' | 'false' | 'not-given';
 }
 
+interface SentenceCompletionQuestion extends ComponentBase {
+  type: 'sentence-completion';
+  question: string;
+  answers: { id: string; text: string; }[];
+  wordLimit: number;
+}
+
 type QuizComponent = 
   | TitleComponent 
   | HeadingComponent 
@@ -115,7 +122,8 @@ type QuizComponent =
   | TableComponent 
   | MultipleChoiceQuestion 
   | FillBlanksQuestion 
-  | TrueFalseQuestion;
+  | TrueFalseQuestion
+  | SentenceCompletionQuestion;
 
 interface QuizMetadata {
   title: string;
@@ -203,6 +211,15 @@ const ComponentSidebar = ({ onAddComponent }) => {
             >
               <Plus className="h-4 w-4 mr-2" />
               True/False/Not Given
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              className="w-full justify-start mt-2" 
+              onClick={() => onAddComponent('sentence-completion')}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Sentence Completion
             </Button>
           </div>
         </div>
@@ -359,6 +376,26 @@ const ComponentRenderer = ({ component, onEdit, onDelete, onMove, isFirst, isLas
                 component.correctAnswer === 'not-given' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-medium' : 'bg-gray-100 dark:bg-gray-800'
               }`}>
                 Not Given
+              </div>
+            </div>
+          </div>
+        );
+        
+      case 'sentence-completion':
+        return (
+          <div className="mb-4">
+            <div className="font-medium mb-2">{component.question}</div>
+            <div className="mt-2 space-y-2">
+              <div className="text-sm text-gray-500 dark:text-gray-400">
+                Word limit: {component.wordLimit} {component.wordLimit === 1 ? 'word' : 'words'}
+              </div>
+              <div className="space-y-2">
+                {component.answers.map((answer, index) => (
+                  <div key={answer.id} className="flex items-center p-2 rounded-md border border-blue-200 bg-blue-50 dark:border-blue-800 dark:bg-blue-900/20">
+                    <span className="mr-2 text-sm font-medium">{index + 1}.</span>
+                    <span>{answer.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -817,6 +854,93 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
           </>
         );
         
+      case 'sentence-completion':
+        return (
+          <>
+            <div className="mb-4">
+              <Label htmlFor="question">Question</Label>
+              <Textarea
+                id="question"
+                value={editedComponent.question}
+                onChange={(e) => handleChange('question', e.target.value)}
+                className="mt-1"
+                placeholder="Enter the incomplete sentence that students need to complete"
+              />
+            </div>
+            
+            <div className="mb-4">
+              <Label htmlFor="wordLimit">Word Limit</Label>
+              <div className="flex items-center gap-2 mt-1">
+                <Input
+                  id="wordLimit"
+                  type="number"
+                  min="1"
+                  max="5"
+                  value={editedComponent.wordLimit}
+                  onChange={(e) => handleChange('wordLimit', parseInt(e.target.value) || 1)}
+                  className="w-20"
+                />
+                <span className="text-sm text-gray-500">
+                  {editedComponent.wordLimit === 1 ? 'word' : 'words'}
+                </span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Specify how many words students are allowed to use (1-5 words)
+              </p>
+            </div>
+            
+            <div className="mb-4">
+              <div className="flex items-center justify-between">
+                <Label>Answers</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const newAnswers = [...(editedComponent.answers || [])];
+                    newAnswers.push({ id: uuidv4(), text: '' });
+                    handleChange('answers', newAnswers);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-1" /> Add Answer
+                </Button>
+              </div>
+              <div className="space-y-2 mt-2">
+                {(editedComponent.answers || []).map((answer, index) => (
+                  <div key={answer.id} className="flex items-center gap-2">
+                    <span className="text-sm font-medium">{index + 1}.</span>
+                    <Input
+                      value={answer.text}
+                      onChange={(e) => {
+                        const newAnswers = [...editedComponent.answers];
+                        newAnswers[index] = { ...answer, text: e.target.value };
+                        handleChange('answers', newAnswers);
+                      }}
+                      placeholder="Correct answer"
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const newAnswers = editedComponent.answers.filter(a => a.id !== answer.id);
+                        handleChange('answers', newAnswers);
+                      }}
+                      className="text-red-500"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                {(editedComponent.answers || []).length === 0 && (
+                  <p className="text-sm text-gray-500 italic">No answers added yet</p>
+                )}
+              </div>
+            </div>
+          </>
+        );
+        
       default:
         return <div>Unknown component type: {component.type}</div>;
     }
@@ -1079,6 +1203,17 @@ export default function QuizBuilder() {
         } as TrueFalseQuestion;
         break;
         
+      case 'sentence-completion':
+        newComponent = {
+          id: uuidv4(),
+          type: 'sentence-completion',
+          order,
+          question: "Complete the following sentence using no more than the specified number of words.",
+          answers: [{ id: uuidv4(), text: "" }],
+          wordLimit: 2
+        } as SentenceCompletionQuestion;
+        break;
+        
       default:
         console.error(`Unknown component type: ${type}`);
         return;
@@ -1164,7 +1299,8 @@ export default function QuizBuilder() {
       const questionCount = components.filter(c => 
         c.type === 'multiple-choice' || 
         c.type === 'fill-blanks' || 
-        c.type === 'true-false-not-given'
+        c.type === 'true-false-not-given' ||
+        c.type === 'sentence-completion'
       ).length;
       
       if (questionCount === 0) {
@@ -1187,7 +1323,8 @@ export default function QuizBuilder() {
         .filter(c => 
           c.type === 'multiple-choice' || 
           c.type === 'fill-blanks' || 
-          c.type === 'true-false-not-given'
+          c.type === 'true-false-not-given' ||
+          c.type === 'sentence-completion'
         )
         .map(c => {
           if (c.type === 'multiple-choice') {
@@ -1204,6 +1341,14 @@ export default function QuizBuilder() {
               type: 'fill-blanks',
               text: fb.question,
               blanks: fb.blanks
+            };
+          } else if (c.type === 'sentence-completion') {
+            const sc = c as SentenceCompletionQuestion;
+            return {
+              type: 'sentence-completion',
+              text: sc.question,
+              answers: sc.answers,
+              wordLimit: sc.wordLimit
             };
           } else {
             const tf = c as TrueFalseQuestion;
