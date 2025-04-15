@@ -80,7 +80,8 @@ export default function Quiz() {
               comp.type === 'multiple-choice' || 
               comp.type === 'fill-blanks' || 
               comp.type === 'true-false-not-given' ||
-              comp.type === 'sentence-completion'
+              comp.type === 'sentence-completion' ||
+              comp.type === 'yes-no-not-given'
             )
             .map((comp, index) => {
               if (comp.type === 'multiple-choice') {
@@ -103,11 +104,18 @@ export default function Quiz() {
                   id: comp.id || `q-${index}`,
                   text: comp.question,
                   type: comp.type,
-                  options: comp.answers.map(answer => ({
+                  options: comp.answers?.map(answer => ({
                     id: answer.id,
                     text: answer.text
                   })),
-                  correctAnswer: comp.correctAnswer || comp.answers[0]?.text
+                  correctAnswer: comp.correctAnswer || comp.answers?.[0]?.text
+                };
+              } else if (comp.type === 'yes-no-not-given') {
+                return {
+                  id: comp.id || `q-${index}`,
+                  text: comp.question,
+                  type: comp.type,
+                  correctAnswer: comp.correctAnswer
                 };
               } else {
                 return {
@@ -215,6 +223,8 @@ export default function Quiz() {
               isCorrect = true;
             }
           }
+        } else if (question.type === 'yes-no-not-given') {
+          isCorrect = question.correctAnswer === userAnswer;
         } else {
           // For other question types, use exact comparison
           isCorrect = question.correctAnswer === userAnswer;

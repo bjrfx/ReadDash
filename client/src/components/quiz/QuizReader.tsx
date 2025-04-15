@@ -326,7 +326,65 @@ export function QuizReader({
             </div>
           </RadioGroup>
         );
-        
+
+      case 'yes-no-not-given':
+        return (
+          <RadioGroup 
+            className="space-y-3" 
+            value={userAnswers[questionId] || ""}
+            onValueChange={(value) => onAnswer(questionId, value)}
+          >
+            <div
+              className={`flex items-start p-3 border ${
+                userAnswers[questionId] === 'yes'
+                  ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
+              } rounded-lg transition-colors`}
+            >
+              <RadioGroupItem 
+                id={`${questionId}-yes`} 
+                value="yes" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
+              />
+              <Label htmlFor={`${questionId}-yes`} className="flex-1 cursor-pointer">
+                Yes
+              </Label>
+            </div>
+            <div
+              className={`flex items-start p-3 border ${
+                userAnswers[questionId] === 'no'
+                  ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
+              } rounded-lg transition-colors`}
+            >
+              <RadioGroupItem 
+                id={`${questionId}-no`} 
+                value="no" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
+              />
+              <Label htmlFor={`${questionId}-no`} className="flex-1 cursor-pointer">
+                No
+              </Label>
+            </div>
+            <div
+              className={`flex items-start p-3 border ${
+                userAnswers[questionId] === 'not-given'
+                  ? "border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
+                  : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 hover:text-gray-900 dark:hover:bg-gray-700/70 dark:hover:text-gray-200"
+              } rounded-lg transition-colors`}
+            >
+              <RadioGroupItem 
+                id={`${questionId}-not-given`} 
+                value="not-given" 
+                className="mt-0.5 mr-3 border-gray-400 dark:border-gray-500 dark:text-white" 
+              />
+              <Label htmlFor={`${questionId}-not-given`} className="flex-1 cursor-pointer">
+                Not Given
+              </Label>
+            </div>
+          </RadioGroup>
+        );
+
       case 'sentence-completion':
         // Split text by underscores to find blanks
         const sentenceParts = currentQuestion.text.split('________');

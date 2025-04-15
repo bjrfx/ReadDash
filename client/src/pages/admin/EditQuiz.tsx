@@ -105,6 +105,12 @@ interface SentenceCompletionQuestion extends ComponentBase {
   wordLimit: number;
 }
 
+interface YesNoNotGivenQuestion extends ComponentBase {
+  type: 'yes-no-not-given';
+  question: string;
+  correctAnswer: 'yes' | 'no' | 'not-given';
+}
+
 type QuizComponent = 
   | TitleComponent 
   | HeadingComponent 
@@ -115,7 +121,8 @@ type QuizComponent =
   | MultipleChoiceQuestion 
   | FillBlanksQuestion 
   | TrueFalseQuestion
-  | SentenceCompletionQuestion;
+  | SentenceCompletionQuestion
+  | YesNoNotGivenQuestion;
 
 interface QuizMetadata {
   title: string;
@@ -212,6 +219,15 @@ const ComponentSidebar = ({ onAddComponent }) => {
             >
               <Plus className="h-4 w-4 mr-2" />
               Sentence Completion
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full justify-start mt-2"
+              onClick={() => onAddComponent('yes-no-not-given')}
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Yes/No/Not Given
             </Button>
           </div>
         </div>
@@ -389,6 +405,18 @@ const ComponentRenderer = ({ component, onEdit, onDelete, onMove, isFirst, isLas
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        );
+
+      case 'yes-no-not-given':
+        return (
+          <div className="mb-4">
+            <div className="font-medium mb-2">{component.question}</div>
+            <div className="flex space-x-4">
+              <div className={`px-3 py-1.5 rounded-md ${component.correctAnswer === 'yes' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 font-medium' : 'bg-gray-100 dark:bg-gray-800'}`}>Yes</div>
+              <div className={`px-3 py-1.5 rounded-md ${component.correctAnswer === 'no' ? 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 font-medium' : 'bg-gray-100 dark:bg-gray-800'}`}>No</div>
+              <div className={`px-3 py-1.5 rounded-md ${component.correctAnswer === 'not-given' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 font-medium' : 'bg-gray-100 dark:bg-gray-800'}`}>Not Given</div>
             </div>
           </div>
         );
@@ -932,6 +960,43 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
             </div>
           </>
         );
+
+      case 'yes-no-not-given':
+        return (
+          <>
+            <div className="mb-4">
+              <Label htmlFor="question">Statement</Label>
+              <Textarea
+                id="question"
+                value={editedComponent.question}
+                onChange={(e) => handleChange('question', e.target.value)}
+                className="mt-1"
+                placeholder="According to the passage, ..."
+              />
+            </div>
+            <div className="mb-4">
+              <Label>Correct Answer</Label>
+              <RadioGroup
+                value={editedComponent.correctAnswer}
+                onValueChange={(value) => handleChange('correctAnswer', value)}
+                className="flex space-x-4 mt-2"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="yes" id="yes" />
+                  <Label htmlFor="yes" className="cursor-pointer">Yes</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="no" id="no" />
+                  <Label htmlFor="no" className="cursor-pointer">No</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="not-given" id="not-given" />
+                  <Label htmlFor="not-given" className="cursor-pointer">Not Given</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </>
+        );
         
       default:
         return <div>Unknown component type: {component.type}</div>;
@@ -1287,6 +1352,15 @@ export default function EditQuiz() {
           wordLimit: 2
         } as SentenceCompletionQuestion;
         break;
+      case 'yes-no-not-given':
+        newComponent = {
+          id: uuidv4(),
+          type: 'yes-no-not-given',
+          order,
+          question: 'According to the passage, ...',
+          correctAnswer: 'yes'
+        } as YesNoNotGivenQuestion;
+        break;
       default:
         console.error(`Unknown component type: ${type}`);
         return;
@@ -1375,7 +1449,8 @@ export default function EditQuiz() {
         c.type === 'multiple-choice' || 
         c.type === 'fill-blanks' || 
         c.type === 'true-false-not-given' ||
-        c.type === 'sentence-completion'
+        c.type === 'sentence-completion' ||
+        c.type === 'yes-no-not-given'
       ).length;
       
       if (questionCount === 0) {
@@ -1399,7 +1474,8 @@ export default function EditQuiz() {
           c.type === 'multiple-choice' || 
           c.type === 'fill-blanks' || 
           c.type === 'true-false-not-given' ||
-          c.type === 'sentence-completion'
+          c.type === 'sentence-completion' ||
+          c.type === 'yes-no-not-given'
         )
         .map(c => {
           if (c.type === 'multiple-choice') {
@@ -1424,6 +1500,13 @@ export default function EditQuiz() {
               text: sc.question,
               answers: sc.answers,
               wordLimit: sc.wordLimit
+            };
+          } else if (c.type === 'yes-no-not-given') {
+            const yn = c as YesNoNotGivenQuestion;
+            return {
+              type: 'yes-no-not-given',
+              text: yn.question,
+              correctAnswer: yn.correctAnswer
             };
           } else {
             const tf = c as TrueFalseQuestion;
