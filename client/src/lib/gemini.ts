@@ -90,3 +90,47 @@ export const generateQuiz = async ({
     throw error;
   }
 };
+
+export interface GenerateQuizFeedbackRequest {
+  quizResponse: GenerateQuizResponse;
+  userAnswers: string[];
+}
+
+export const generateQuizFeedback = async ({
+  quizResponse,
+  userAnswers,
+}: GenerateQuizFeedbackRequest): Promise<string[]> => {
+  try {
+    if (!API_KEY) {
+      throw new Error("No Gemini API key provided");
+    }
+
+    const feedback = await Promise.all(
+      quizResponse.questions.map(async (question, index) => {
+        const userAnswer = userAnswers[index];
+        const prompt = `
+          Provide detailed feedback on the user's answer: "${userAnswer}". 
+          Use the passage: "${quizResponse.passage}" to explain why the answer was correct or incorrect. 
+          The correct answer was "${question.correctAnswer}". The question was: "${question.text}". The options were: "${question.options.join(", ")}".
+          If the answer was incorrect, suggest areas of the passage where the user might have found the correct answer.
+        `;
+
+        const response = await fetch('/api/generate-text', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt }),
+          credentials: 'include',
+        });
+
+        const data = await response.json();
+        return data.text;
+      })
+    );
+    return feedback;
+  } catch (error) {
+    console.error("Error generating quiz feedback with Gemini:", error);
+    throw error;
+  }
+};

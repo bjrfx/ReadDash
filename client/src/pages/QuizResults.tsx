@@ -6,7 +6,7 @@ import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 import { MobileNavBar } from "@/components/layout/MobileNavBar";
 import { QuizResults as QuizResultsComponent } from "@/components/quiz/QuizResults";
 import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
@@ -20,6 +20,7 @@ interface QuizResultData {
   timeSpent: number;
   averageTime: number;
   levelImproved: boolean;
+  userAnswers?: string[];
   nextLevel?: string;
 }
 
@@ -28,6 +29,11 @@ export default function QuizResults() {
   const [, setLocation] = useLocation();
   const { user } = useAuth();
   const { data: userData } = useUserData();
+  
+  // Feedback state
+  const [feedback, setFeedback] = useState<string[]>([]);
+  
+  const [userAnswers, setUserAnswers] = useState<string[]>([]);
   
   // State for quiz results
   const [results, setResults] = useState<QuizResultData | null>(null);
@@ -147,7 +153,8 @@ export default function QuizResults() {
           scoreForComponent = correctAnswers / totalQuestions;
         }
         
-        console.log("Setting results with score:", {
+        console.log("Setting results:", {
+          title: quizData.title || "Quiz",
           originalScore: bestResult.score,
           processedScore: scoreForComponent,
           correctAnswers,
@@ -155,7 +162,8 @@ export default function QuizResults() {
           pointsEarned
         });
         
-        // Set the results
+        // Set the results including userAnswers
+        const userAnswers = bestResult.answers || [];
         setResults({
           title: quizData.title || "Quiz",
           score: scoreForComponent,
@@ -166,6 +174,7 @@ export default function QuizResults() {
           averageTime,
           levelImproved,
           nextLevel
+          
         });
         
       } catch (err) {
@@ -178,6 +187,42 @@ export default function QuizResults() {
     
     fetchQuizData();
   }, [id, user, userData]);
+  
+  const [hasMounted, setHasMounted] = useState(false);
+  
+  useEffect(() => {
+    setHasMounted(true);
+  }, []);
+  
+  useEffect(() => {
+    const fetchFeedback = async () => {
+      if (!results || !results.userAnswers) {
+        return;
+      }
+      
+      try {
+        const quizDetailsRef = doc(db, "quizzes", id || "");
+        const quizDetailsSnap = await getDoc(quizDetailsRef);
+        if (!quizDetailsSnap.exists()) {
+          throw new Error("Quiz details not found");
+        }
+        
+        const quizDetails = quizDetailsSnap.data();
+        // console.log("Quiz Details : ", quizDetails);
+        
+        const questions = quizDetails.questions;
+        // console.log("Questions : ", questions);
+        
+        // const feedbackResults = await generateQuizFeedback({ quizResponse : questions, userAnswers : results.userAnswers});
+        // setFeedback(feedbackResults);
+      } catch (err) {
+        console.error("Error fetching feedback: ", err);
+      }
+    };
+    
+    // fetchFeedback();
+  }, [results, id]);
+  
   
   // Format time in MM:SS format
   const formatTime = (seconds: number): string => {
@@ -234,6 +279,7 @@ export default function QuizResults() {
             averageTime={formatTime(results.averageTime)}
             levelImproved={results.levelImproved}
             nextLevel={results.nextLevel}
+            feedback={feedback}
           />
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

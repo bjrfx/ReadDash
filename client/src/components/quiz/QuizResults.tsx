@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckIcon, ChartLine } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface QuizResultsProps {
   title: string;
@@ -13,6 +14,7 @@ interface QuizResultsProps {
   averageTime: string;
   levelImproved: boolean;
   nextLevel?: string;
+  feedback: string[];
 }
 
 export function QuizResults({
@@ -25,6 +27,7 @@ export function QuizResults({
   averageTime,
   levelImproved,
   nextLevel,
+  feedback,
 }: QuizResultsProps) {
   // Ensure score is a valid number between 0-1 before converting to percentage
   const validScore = typeof score === 'number' && !isNaN(score) 
@@ -88,6 +91,21 @@ export function QuizResults({
             </div>
           </div>
         )}
+        {feedback && feedback.length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-medium text-lg mb-2">Answer Review</h3>
+            <ScrollArea className="h-64">
+              {feedback.map((item, index) => (
+                item && (
+                  <div key={index} className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                    <p className="text-sm text-gray-700 dark:text-gray-300">{item}</p>
+                  </div>
+                )
+              ))}
+            </ScrollArea>
+          </div>
+        )}
+
       </CardContent>
     </Card>
   );
