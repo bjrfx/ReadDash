@@ -108,7 +108,7 @@ export default function Quiz() {
                     id: answer.id,
                     text: answer.text
                   })),
-                  correctAnswer: comp.correctAnswer || comp.answers?.[0]?.text
+                  correctAnswer: comp.answers?.[0]?.text || ""
                 };
               } else if (comp.type === 'yes-no-not-given') {
                 return {

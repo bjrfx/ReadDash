@@ -221,24 +221,21 @@ export default function QuizReview() {
         
         if (quizData.questions && Array.isArray(quizData.questions)) {
           questions = quizData.questions.map((q: any, index: number) => {
-            // Log each question for debugging
-            console.log("Processing question:", {
-              id: q.id,
-              text: q.text,
-              correctAnswer: q.correctAnswer,
-              hasOptions: !!q.options,
-              index
-            });
-            
             // Use q-index format to match with results
             const resultId = indexToResultIdMap[index] || `q-${index}`;
-            
+
+            // For sentence-completion, extract correct answer from answers array
+            let correctAnswer = q.correctAnswer;
+            if (q.type === 'sentence-completion' && q.answers && q.answers.length > 0) {
+              correctAnswer = q.answers[0].text;
+            }
+
             return {
               id: resultId, // Use the ID format from results
               text: q.text,
               type: q.type,
               options: q.options,
-              correctAnswer: q.correctAnswer,
+              correctAnswer,
               reason: q.reason || q.explanation || ""
             };
           });
@@ -255,7 +252,14 @@ export default function QuizReview() {
             
           questions = questionComponents.map((comp: any, index: number) => {
             const resultId = indexToResultIdMap[index] || `q-${index}`;
-            const correctAnswer = comp.correctAnswer || comp.correctOption;
+            
+            // Handle correctAnswer differently based on question type
+            let correctAnswer = comp.correctAnswer || comp.correctOption;
+            
+            // For sentence completion questions, get the answer from the answers array
+            if (comp.type === 'sentence-completion' && comp.answers && comp.answers.length > 0) {
+              correctAnswer = comp.answers[0].text;
+            }
             
             // Log each component for debugging
             console.log("Processing component:", {
@@ -265,6 +269,8 @@ export default function QuizReview() {
               question: comp.question || "No question text",
               correctAnswer,
               hasOptions: !!comp.options,
+              hasAnswers: !!comp.answers,
+              answersLength: comp.answers?.length,
               index
             });
             
@@ -326,6 +332,12 @@ export default function QuizReview() {
     if (question.type === 'yes-no-not-given' || question.type === 'true-false-not-given') {
       // For these question types, the optionId is the direct answer (yes, no, not-given)
       return optionId.charAt(0).toUpperCase() + optionId.slice(1).replace('-', ' ');
+    }
+    
+    // Special handling for sentence completion questions
+    if (question.type === 'sentence-completion') {
+      // For sentence completion, the answer is stored directly
+      return optionId;
     }
     
     if (!question.options) return optionId; // Return the raw ID if options aren't found
