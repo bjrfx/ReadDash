@@ -9,6 +9,7 @@ import { Loader2 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
+import { generateQuizFeedback } from "@/lib/gemini";
 import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 
 interface QuizResultData {
@@ -197,15 +198,19 @@ export default function QuizResults() {
   useEffect(() => {
     const fetchFeedback = async () => {
       if (!results || !results.userAnswers) {
+        setFeedback([]);
         return;
       }
       
       try {
         const quizDetailsRef = doc(db, "quizzes", id || "");
         const quizDetailsSnap = await getDoc(quizDetailsRef);
+        
         if (!quizDetailsSnap.exists()) {
           throw new Error("Quiz details not found");
         }
+        
+        
         
         const quizDetails = quizDetailsSnap.data();
         // console.log("Quiz Details : ", quizDetails);
@@ -214,11 +219,14 @@ export default function QuizResults() {
         // console.log("Questions : ", questions);
         
         // const feedbackResults = await generateQuizFeedback({ quizResponse : questions, userAnswers : results.userAnswers});
-        // setFeedback(feedbackResults);
+        const feedbackResults = await generateQuizFeedback({ quizResponse: quizDetails, userAnswers: results.userAnswers });
+        setFeedback(feedbackResults);
       } catch (err) {
         console.error("Error fetching feedback: ", err);
+        setFeedback([]);
       }
     };
+    if (hasMounted) {
     
     // fetchFeedback();
   }, [results, id]);
