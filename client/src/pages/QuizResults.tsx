@@ -237,12 +237,12 @@ export default function QuizResults() {
           />
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button onClick={() => setLocation(`/quizzes`)}>
-              Take Another Quiz
+            {/* <Button onClick={() => setLocation(`/history`)}>
+              Review Answers
             </Button>
             <Button variant="outline" onClick={() => setLocation(`/history`)}>
               View Quiz History
-            </Button>
+            </Button> */}
           </div>
         </div>
       </main>
