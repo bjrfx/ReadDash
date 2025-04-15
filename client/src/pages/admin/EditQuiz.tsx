@@ -1277,7 +1277,16 @@ export default function EditQuiz() {
           correctAnswer: 'true'
         } as TrueFalseQuestion;
         break;
-        
+      case 'sentence-completion':
+        newComponent = {
+          id: uuidv4(),
+          type: 'sentence-completion',
+          order,
+          question: "Complete the following sentence using no more than the specified number of words.",
+          answers: [{ id: uuidv4(), text: "" }],
+          wordLimit: 2
+        } as SentenceCompletionQuestion;
+        break;
       default:
         console.error(`Unknown component type: ${type}`);
         return;
