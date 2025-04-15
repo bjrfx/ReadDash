@@ -79,7 +79,8 @@ export default function Quiz() {
             .filter(comp => 
               comp.type === 'multiple-choice' || 
               comp.type === 'fill-blanks' || 
-              comp.type === 'true-false-not-given'
+              comp.type === 'true-false-not-given' ||
+              comp.type === 'sentence-completion'
             )
             .map((comp, index) => {
               if (comp.type === 'multiple-choice') {
@@ -96,6 +97,17 @@ export default function Quiz() {
                   text: comp.question,
                   type: comp.type,
                   blanks: comp.blanks
+                };
+              } else if (comp.type === 'sentence-completion') {
+                return {
+                  id: comp.id || `q-${index}`,
+                  text: comp.question,
+                  type: comp.type,
+                  options: comp.answers.map(answer => ({
+                    id: answer.id,
+                    text: answer.text
+                  })),
+                  correctAnswer: comp.correctAnswer || comp.answers[0]?.text
                 };
               } else {
                 return {
@@ -165,7 +177,48 @@ export default function Quiz() {
       let correctCount = 0;
       const questionResults = quiz.questions.map(question => {
         const userAnswer = userAnswers[question.id || ''];
-        const isCorrect = question.correctAnswer === userAnswer;
+        
+        // Special handling for sentence completion questions
+        let isCorrect = false;
+        if (question.type === 'sentence-completion') {
+          // For sentence completion, do case-insensitive comparison and trim whitespace
+          // Handle null/undefined values by providing empty string defaults
+          const normalizedUserAnswer = (userAnswer || '').trim().toLowerCase();
+          const normalizedCorrectAnswer = (question.correctAnswer || '').trim().toLowerCase();
+          
+          // Debug logging to help diagnose issues
+          console.log('Sentence completion answer check:', {
+            questionId: question.id,
+            userAnswer: normalizedUserAnswer,
+            correctAnswer: normalizedCorrectAnswer,
+            isMatch: normalizedUserAnswer === normalizedCorrectAnswer
+          });
+          
+          // For sentence completion questions, we need to be more flexible with matching
+          // Try multiple approaches to match the answer
+          
+          // 1. Exact match after normalization
+          if (normalizedUserAnswer === normalizedCorrectAnswer) {
+            isCorrect = true;
+          }
+          // 2. Check if answers match after removing punctuation and extra spaces
+          else {
+            const cleanUserAnswer = normalizedUserAnswer.replace(/[.,;:!?"'()\-]/g, '').replace(/\s+/g, ' ').trim();
+            const cleanCorrectAnswer = normalizedCorrectAnswer.replace(/[.,;:!?"'()\-]/g, '').replace(/\s+/g, ' ').trim();
+            
+            if (cleanUserAnswer === cleanCorrectAnswer) {
+              isCorrect = true;
+            }
+            // 3. Check if one answer contains the other (for partial matches)
+            else if (cleanUserAnswer.includes(cleanCorrectAnswer) || 
+                     cleanCorrectAnswer.includes(cleanUserAnswer)) {
+              isCorrect = true;
+            }
+          }
+        } else {
+          // For other question types, use exact comparison
+          isCorrect = question.correctAnswer === userAnswer;
+        }
         
         if (isCorrect) correctCount++;
         
@@ -185,7 +238,7 @@ export default function Quiz() {
         title: quiz.title,
         readingLevel: quiz.readingLevel,
         category: quiz.category,
-        score,
+        score, // This is a percentage (0-100)
         timeSpent,
         correctCount,
         totalQuestions: quiz.questions.length,
@@ -194,9 +247,10 @@ export default function Quiz() {
       };
       
       const resultRef = await addDoc(collection(db, "quizResults"), resultData);
-      console.log("Saved quiz result with ID:", resultRef.id);
+      console.log("Saved quiz result with ID:", resultRef.id, "with score:", score);
       
       // Redirect to results page with necessary query parameters
+      // Ensure we're passing the score as a percentage (0-100)
       setLocation(`/quiz-results/${quiz.id}?score=${score}&correct=${correctCount}&total=${quiz.questions.length}&time=${timeSpent}`);
     } catch (err) {
       console.error("Error submitting quiz:", err);

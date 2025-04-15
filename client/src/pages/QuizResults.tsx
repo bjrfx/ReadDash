@@ -97,7 +97,11 @@ export default function QuizResults() {
         if (!pointsEarned && pointsEarned !== 0) {
           const readingLevelNum = parseInt(quizData.readingLevel?.replace(/[A-Z]/g, '') || '5');
           const levelFactor = readingLevelNum * 2;
-          const scoreFactor = Math.round(bestResult.score / 10);
+          
+          // Make points proportional to score percentage
+          // Base points (10) + level factor + score percentage factor
+          const scorePercentage = bestResult.score || 0;
+          const scoreFactor = Math.round(scorePercentage);
           pointsEarned = 10 + levelFactor + scoreFactor;
           // console.log("Calculated points:", pointsEarned);
         }
@@ -130,7 +134,18 @@ export default function QuizResults() {
         
         // Important: The QuizResultsComponent expects score as a decimal (0-1)
         // but Firestore stores it as a percentage (0-100)
-        const scoreForComponent = bestResult.score > 1 ? bestResult.score / 100 : bestResult.score;
+        // Make sure we're properly converting the score
+        let scoreForComponent = bestResult.score;
+        
+        // If score is greater than 1, assume it's a percentage and convert to decimal
+        if (scoreForComponent > 1) {
+          scoreForComponent = scoreForComponent / 100;
+        }
+        
+        // If score is 0 but we have correct answers, calculate from correct/total
+        if (scoreForComponent === 0 && correctAnswers > 0) {
+          scoreForComponent = correctAnswers / totalQuestions;
+        }
         
         console.log("Setting results with score:", {
           originalScore: bestResult.score,

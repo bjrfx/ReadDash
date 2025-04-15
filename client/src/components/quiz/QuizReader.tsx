@@ -216,13 +216,13 @@ export function QuizReader({
         
         return (
           <div className="space-y-4">
-            <div className="text-lg">
+            <div className="text-lg leading-relaxed">
               {parts.map((part, i) => (
                 <span key={i}>
                   {part}
                   {i < parts.length - 1 && (
                     <Input
-                      className="inline-block w-32 mx-1 px-2 py-1"
+                      className="inline-block w-32 mx-1 px-2 py-0 h-8 border-b-2 border-t-0 border-x-0 rounded-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-primary-400 dark:border-primary-500 bg-transparent focus:border-primary-500 dark:focus:border-primary-400 transition-colors"
                       value={blankAnswers[`${questionId}-${i}`] || ''}
                       onChange={(e) => {
                         const value = e.target.value;
@@ -237,6 +237,7 @@ export function QuizReader({
                         
                         onAnswer(questionId, blankId);
                       }}
+                      placeholder="_____________"
                     />
                   )}
                 </span>
@@ -301,6 +302,33 @@ export function QuizReader({
               </Label>
             </div>
           </RadioGroup>
+        );
+        
+      case 'sentence-completion':
+        // Split text by underscores to find blanks
+        const sentenceParts = currentQuestion.text.split('________');
+        
+        return (
+          <div className="space-y-4">
+            <div className="text-lg leading-relaxed">
+              {sentenceParts.map((part, i) => (
+                <span key={i}>
+                  {part}
+                  {i < sentenceParts.length - 1 && (
+                    <Input
+                      className="inline-block w-40 mx-1 px-2 py-0 h-8 border-b-2 border-t-0 border-x-0 rounded-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 border-primary-400 dark:border-primary-500 bg-transparent focus:border-primary-500 dark:focus:border-primary-400 transition-colors"
+                      value={userAnswers[questionId] || ''}
+                      onChange={(e) => {
+                        // Store the user's answer directly in the parent component
+                        onAnswer(questionId, e.target.value);
+                      }}
+                      placeholder="_____________"
+                    />
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
         );
         
       default:
@@ -371,9 +399,16 @@ export function QuizReader({
       {/* Question */}
       <Card className="mb-6">
         <CardContent className="p-5">
-          <h3 className="text-lg font-medium mb-4">{currentQuestion.text || "Question text not available"}</h3>
-          
-          {renderQuestion()}
+          {currentQuestion.type === 'sentence-completion' || currentQuestion.type === 'fill-blanks' ? (
+            <div>
+              {renderQuestion()}
+            </div>
+          ) : (
+            <div>
+              <h3 className="text-lg font-medium mb-4">{currentQuestion.text || "Question text not available"}</h3>
+              {renderQuestion()}
+            </div>
+          )}
         </CardContent>
       </Card>
       
