@@ -127,6 +127,29 @@ export function QuizReader({
       });
     }
   }, [user, quiz, toast]);
+
+  // Handle highlighting selected text
+  const handleHighlight = useCallback((color: string) => {
+    if (!passageContainerRef.current) return;
+    const container = passageContainerRef.current;
+    // Temporarily make passage contenteditable
+    const prevEditable = container.getAttribute('contenteditable');
+    container.setAttribute('contenteditable', 'true');
+    container.focus();
+    try {
+      document.execCommand('styleWithCSS', false, 'true');
+      document.execCommand('hiliteColor', false, color);
+    } catch (e) {
+      // fallback: do nothing
+    }
+    // Restore previous contenteditable state
+    if (prevEditable === null) {
+      container.removeAttribute('contenteditable');
+    } else {
+      container.setAttribute('contenteditable', prevEditable);
+    }
+    window.getSelection()?.removeAllRanges();
+  }, []);
   
   // Make sure quiz and quiz.questions exists before accessing
   if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
@@ -389,6 +412,7 @@ export function QuizReader({
               y={contextMenu.y}
               selectedWord={contextMenu.selectedWord}
               onAddToVocabulary={handleAddToVocabulary}
+              onHighlight={handleHighlight}
               onClose={handleCloseContextMenu}
               containerRef={passageContainerRef}
             />

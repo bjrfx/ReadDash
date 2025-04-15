@@ -6,21 +6,31 @@ interface VocabularyContextMenuProps {
   y: number;
   selectedWord: string;
   onAddToVocabulary: (word: string) => void;
+  onHighlight?: (color: string) => void; // New prop for highlight
   onClose: () => void;
   containerRef: React.RefObject<HTMLElement>;
 }
+
+const HIGHLIGHT_COLORS = [
+  { name: "Yellow", value: "#fff59d" },
+  { name: "Green", value: "#b9f6ca" },
+  { name: "Pink", value: "#f8bbd0" },
+  { name: "Blue", value: "#b3e5fc" },
+];
 
 export function VocabularyContextMenu({
   x,
   y,
   selectedWord,
   onAddToVocabulary,
+  onHighlight,
   onClose,
   containerRef,
 }: VocabularyContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ left: 0, top: 0 });
-  
+  const [showColors, setShowColors] = useState(false);
+
   // Calculate the proper position when the component mounts or coordinates change
   useEffect(() => {
     if (menuRef.current && containerRef.current) {
@@ -69,6 +79,17 @@ export function VocabularyContextMenu({
     onClose();
   };
 
+  const handleHighlightClick = () => {
+    setShowColors(true);
+  };
+
+  const handleColorSelect = (color: string) => {
+    if (onHighlight) {
+      onHighlight(color);
+    }
+    onClose();
+  };
+
   return (
     <div
       ref={menuRef}
@@ -90,6 +111,26 @@ export function VocabularyContextMenu({
         >
           Add to Vocabulary
         </Button>
+        <Button
+          variant="ghost"
+          className="w-full justify-start text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-sm"
+          onClick={handleHighlightClick}
+        >
+          Highlight
+        </Button>
+        {showColors && (
+          <div className="flex gap-2 mt-2 px-2">
+            {HIGHLIGHT_COLORS.map((color) => (
+              <button
+                key={color.value}
+                title={color.name}
+                className="w-6 h-6 rounded-full border-2 border-gray-300 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                style={{ background: color.value }}
+                onClick={() => handleColorSelect(color.value)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
