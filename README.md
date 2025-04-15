@@ -6,7 +6,7 @@ ReadDash is a modern reading comprehension web application developed by BDOT Sof
 
 ## About BDOT Software
 
-BDOT Software is a technology company focused on developing educational solutions and applications. Founded by Laxmi Phani Kiran Bandarupalli, the company aims to create innovative tools that enhance learning experiences and educational outcomes. 
+BDOT Software is a technology company focused on developing educational solutions and applications. Founded by Siva Bandarupalli & Laxmi Phani Kiran Bandarupalli, the company aims to create innovative tools that enhance learning experiences and educational outcomes. 
 
 ### CEO & Founder
 
