@@ -20,6 +20,7 @@ import Vocabulary from "@/pages/Vocabulary";
 import AuthTest from "@/pages/AuthTest";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { RequireAdmin } from "@/components/auth/RequireAdmin";
+import { FirstTimeLoginHandler } from "@/components/auth/FirstTimeLoginHandler";
 import { useEffect } from "react";
 import { handleRedirectResult } from "./lib/firebase";
 import CookieConsent from "@/components/ui/cookie-consent/CookieConsent";
@@ -149,6 +150,7 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <Router />
+        <FirstTimeLoginHandler />
         <CookieConsent />
         <Toaster />
         {/* <InstallPopup delay={5000} /> */}
