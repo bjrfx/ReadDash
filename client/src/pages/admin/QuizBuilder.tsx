@@ -92,18 +92,21 @@ interface MultipleChoiceQuestion extends ComponentBase {
   question: string;
   options: Option[];
   correctOption: string;
+  reason?: string;
 }
 
 interface FillBlanksQuestion extends ComponentBase {
   type: 'fill-blanks';
   question: string;
   blanks: { id: string; answer: string }[];
+  reason?: string;
 }
 
 interface TrueFalseQuestion extends ComponentBase {
   type: 'true-false-not-given';
   question: string;
   correctAnswer: 'true' | 'false' | 'not-given';
+  reason?: string;
 }
 
 interface SentenceCompletionQuestion extends ComponentBase {
@@ -111,12 +114,14 @@ interface SentenceCompletionQuestion extends ComponentBase {
   question: string;
   answers: { id: string; text: string; }[];
   wordLimit: number;
+  reason?: string;
 }
 
 interface YesNoNotGivenQuestion extends ComponentBase {
   type: 'yes-no-not-given';
   question: string;
   correctAnswer: 'yes' | 'no' | 'not-given';
+  reason?: string;
 }
 
 type QuizComponent = 
@@ -782,6 +787,18 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
                 Add Option
               </Button>
             </div>
+            {['multiple-choice','fill-blanks','true-false-not-given','sentence-completion','yes-no-not-given'].includes(component.type) && (
+              <div className="mb-4">
+                <Label htmlFor="reason">Reason / Explanation (optional)</Label>
+                <Textarea
+                  id="reason"
+                  value={editedComponent.reason || ''}
+                  onChange={e => handleChange('reason', e.target.value)}
+                  className="mt-1"
+                  placeholder="Provide an explanation or justification for the correct answer (optional)"
+                />
+              </div>
+            )}
           </>
         );
         
@@ -841,6 +858,18 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
                 </div>
               </div>
             )}
+            {['multiple-choice','fill-blanks','true-false-not-given','sentence-completion','yes-no-not-given'].includes(component.type) && (
+              <div className="mb-4">
+                <Label htmlFor="reason">Reason / Explanation (optional)</Label>
+                <Textarea
+                  id="reason"
+                  value={editedComponent.reason || ''}
+                  onChange={e => handleChange('reason', e.target.value)}
+                  className="mt-1"
+                  placeholder="Provide an explanation or justification for the correct answer (optional)"
+                />
+              </div>
+            )}
           </>
         );
         
@@ -879,6 +908,18 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
                 </div>
               </RadioGroup>
             </div>
+            {['multiple-choice','fill-blanks','true-false-not-given','sentence-completion','yes-no-not-given'].includes(component.type) && (
+              <div className="mb-4">
+                <Label htmlFor="reason">Reason / Explanation (optional)</Label>
+                <Textarea
+                  id="reason"
+                  value={editedComponent.reason || ''}
+                  onChange={e => handleChange('reason', e.target.value)}
+                  className="mt-1"
+                  placeholder="Provide an explanation or justification for the correct answer (optional)"
+                />
+              </div>
+            )}
           </>
         );
 
@@ -916,6 +957,18 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
                 </div>
               </RadioGroup>
             </div>
+            {['multiple-choice','fill-blanks','true-false-not-given','sentence-completion','yes-no-not-given'].includes(component.type) && (
+              <div className="mb-4">
+                <Label htmlFor="reason">Reason / Explanation (optional)</Label>
+                <Textarea
+                  id="reason"
+                  value={editedComponent.reason || ''}
+                  onChange={e => handleChange('reason', e.target.value)}
+                  className="mt-1"
+                  placeholder="Provide an explanation or justification for the correct answer (optional)"
+                />
+              </div>
+            )}
           </>
         );
         
@@ -1003,6 +1056,18 @@ const ComponentEditor = ({ component, onSave, onClose }) => {
                 )}
               </div>
             </div>
+            {['multiple-choice','fill-blanks','true-false-not-given','sentence-completion','yes-no-not-given'].includes(component.type) && (
+              <div className="mb-4">
+                <Label htmlFor="reason">Reason / Explanation (optional)</Label>
+                <Textarea
+                  id="reason"
+                  value={editedComponent.reason || ''}
+                  onChange={e => handleChange('reason', e.target.value)}
+                  className="mt-1"
+                  placeholder="Provide an explanation or justification for the correct answer (optional)"
+                />
+              </div>
+            )}
           </>
         );
         
@@ -1410,14 +1475,16 @@ export default function QuizBuilder() {
               type: 'multiple-choice',
               text: mc.question,
               options: mc.options,
-              correctAnswer: mc.correctOption
+              correctAnswer: mc.correctOption,
+              reason: mc.reason
             };
           } else if (c.type === 'fill-blanks') {
             const fb = c as FillBlanksQuestion;
             return {
               type: 'fill-blanks',
               text: fb.question,
-              blanks: fb.blanks
+              blanks: fb.blanks,
+              reason: fb.reason
             };
           } else if (c.type === 'sentence-completion') {
             const sc = c as SentenceCompletionQuestion;
@@ -1425,21 +1492,24 @@ export default function QuizBuilder() {
               type: 'sentence-completion',
               text: sc.question,
               answers: sc.answers,
-              wordLimit: sc.wordLimit
+              wordLimit: sc.wordLimit,
+              reason: sc.reason
             };
           } else if (c.type === 'yes-no-not-given') {
             const yn = c as YesNoNotGivenQuestion;
             return {
               type: 'yes-no-not-given',
               text: yn.question,
-              correctAnswer: yn.correctAnswer
+              correctAnswer: yn.correctAnswer,
+              reason: yn.reason
             };
           } else {
             const tf = c as TrueFalseQuestion;
             return {
               type: 'true-false-not-given',
               text: tf.question,
-              correctAnswer: tf.correctAnswer
+              correctAnswer: tf.correctAnswer,
+              reason: tf.reason
             };
           }
         });
