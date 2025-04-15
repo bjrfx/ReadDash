@@ -7,6 +7,7 @@ import Dashboard from "@/pages/Dashboard";
 import Login from "@/pages/Login";
 import Quiz from "@/pages/Quiz";
 import QuizResults from "@/pages/QuizResults";
+import QuizReview from "@/pages/QuizReview";
 import Achievements from "@/pages/Achievements";
 import Admin from "@/pages/Admin";
 import UserView from "@/pages/admin/UserView";
@@ -56,6 +57,13 @@ function Router() {
         {params => (
           <RequireAuth>
             <QuizResults />
+          </RequireAuth>
+        )}
+      </Route>
+      <Route path="/quizzes/:id/review">
+        {params => (
+          <RequireAuth>
+            <QuizReview />
           </RequireAuth>
         )}
       </Route>

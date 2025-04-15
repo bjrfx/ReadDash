@@ -88,15 +88,6 @@ export function QuizResults({
             </div>
           </div>
         )}
-        
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button asChild>
-            <Link href="/history">Review Answers</Link>
-          </Button>
-          <Button variant="outline" asChild>
-            <Link href="/history">View Quiz History</Link>
-          </Button>
-        </div>
       </CardContent>
     </Card>
   );
