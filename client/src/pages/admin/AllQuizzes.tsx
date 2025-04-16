@@ -34,13 +34,14 @@ export default function AllQuizzes() {
   
   // State for quizzes and filters
   const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   
-  // Fetch quizzes from Firestore
+  // Fetch quizzes and categories from Firestore
   useEffect(() => {
-    const fetchQuizzes = async () => {
+    const fetchData = async () => {
       if (!isAdmin) return;
       
       try {
@@ -56,6 +57,26 @@ export default function AllQuizzes() {
         }));
         
         setQuizzes(quizzesData);
+        
+        // Extract unique categories from quizzes
+        const uniqueCategories = [...new Set(quizzesData.map(quiz => quiz.category))].filter(Boolean);
+        
+        // Fetch categories from Firebase (if they exist in a separate collection)
+        try {
+          const categoriesSnapshot = await getDocs(collection(db, "categories"));
+          if (!categoriesSnapshot.empty) {
+            const categoriesData = categoriesSnapshot.docs.map(doc => doc.data().name || doc.id);
+            setCategories(categoriesData);
+          } else {
+            // If no categories collection, use the ones extracted from quizzes
+            setCategories(uniqueCategories);
+          }
+        } catch (error) {
+          console.error("Error fetching categories:", error);
+          // Fallback to categories from quizzes
+          setCategories(uniqueCategories);
+        }
+        
         setLoading(false);
       } catch (error) {
         console.error("Error fetching quizzes:", error);
@@ -68,7 +89,7 @@ export default function AllQuizzes() {
       }
     };
     
-    fetchQuizzes();
+    fetchData();
   }, [isAdmin, toast]);
   
   // Filter quizzes based on search query and category
@@ -182,10 +203,11 @@ export default function AllQuizzes() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Categories</SelectItem>
-                  <SelectItem value="Science">Science</SelectItem>
-                  <SelectItem value="History">History</SelectItem>
-                  <SelectItem value="Literature">Literature</SelectItem>
-                  <SelectItem value="Social Studies">Social Studies</SelectItem>
+                  {categories.map((category) => (
+                    <SelectItem key={category} value={category}>
+                      {category}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
