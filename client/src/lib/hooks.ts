@@ -67,7 +67,6 @@ export const useAdmin = () => {
 // Custom hook for theme (dark/light mode)
 export const useTheme = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
-    // Check for stored theme preference or default to light mode
     if (typeof window !== 'undefined') {
       // If theme is explicitly set in localStorage, use that
       if (localStorage.theme === 'dark') {
@@ -75,8 +74,9 @@ export const useTheme = () => {
       } else if (localStorage.theme === 'light') {
         return 'light';
       }
-      // Otherwise default to light mode instead of system preference
-      return 'light';
+      // Default to dark mode on mobile devices
+      const isMobile = window.innerWidth < 640 || /Mobi|Android/i.test(navigator.userAgent);
+      return isMobile ? 'dark' : 'light';
     }
     return 'light'; // Default to light if window not available
   });
