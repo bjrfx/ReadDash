@@ -159,22 +159,12 @@ export default function Login() {
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
     try {
-      // For mobile devices, use redirect method as it works better
-      if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        console.log("Using redirect method for mobile device");
-        // Store that we're attempting a Google auth redirect and prepare for redirect
-        sessionStorage.setItem('googleAuthAttempt', 'true');
-        prepareForRedirect(); // Use our new debugging helper
-        await signInWithGoogle();
-        // Will redirect to Google, code below won't execute until return
-      } else {
-        // For desktop, use popup method
-        console.log("Using popup method for desktop");
-        const user = await signInWithGooglePopup();
-        if (user) {
-          console.log("Successfully signed in via popup:", user.email);
-          setLocation('/');
-        }
+      // Always use popup for Google sign-in, even on mobile
+      console.log("Using popup method for Google sign-in");
+      const user = await signInWithGooglePopup();
+      if (user) {
+        console.log("Successfully signed in via popup:", user.email);
+        setLocation('/');
       }
     } catch (error) {
       // Check if this is an unauthorized domain error
