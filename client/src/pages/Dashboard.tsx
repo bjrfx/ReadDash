@@ -188,33 +188,18 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         console.log("Fetching weekly activity data from Firestore...");
-        
         if (!user?.uid) return defaultWeeklyActivity;
-        
-        // Get current date and calculate the start of the week (Monday)
         const today = new Date();
-        const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1; // 0=Mon, 6=Sun
-        
-        // Mark today as active
+        const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
         const weeklyActivity = [...defaultWeeklyActivity];
         weeklyActivity[currentDayIndex].isActive = true;
-        
-        // Calculate the start of the week (Monday)
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - currentDayIndex);
         startOfWeek.setHours(0, 0, 0, 0);
-        
-        // Calculate the end of the week (Sunday)
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
         endOfWeek.setHours(23, 59, 59, 999);
-        
-        console.log("Weekly activity range:", { 
-          startOfWeek: startOfWeek.toISOString(), 
-          endOfWeek: endOfWeek.toISOString()
-        });
-        
-        // Query quizResults for this user within the week
+        console.log("Weekly activity range:", { startOfWeek: startOfWeek.toISOString(), endOfWeek: endOfWeek.toISOString() });
         const quizResultsRef = collection(db, "quizResults");
         const weeklyQuery = query(
           quizResultsRef,
@@ -222,30 +207,41 @@ export default function Dashboard() {
           where("completedAt", ">=", Timestamp.fromDate(startOfWeek)),
           where("completedAt", "<=", Timestamp.fromDate(endOfWeek))
         );
-        
         const quizSnapshot = await getDocs(weeklyQuery);
-        console.log(`Found ${quizSnapshot.docs.length} quizzes this week`);
-        
+        console.log(`Found ${quizSnapshot.docs.length} quizzes this week (Firestore query)`);
+        // Fallback: fetch all user's quizResults if query returns 0, to handle non-Timestamp completedAt
+        let allDocs = quizSnapshot.docs;
+        if (quizSnapshot.docs.length === 0) {
+          const allQuery = query(quizResultsRef, where("userId", "==", user.uid));
+          const allSnapshot = await getDocs(allQuery);
+          allDocs = allSnapshot.docs;
+          console.log(`Fallback: found ${allDocs.length} total quizzes for user`);
+        }
         // Count quizzes for each day of the week
-        quizSnapshot.docs.forEach(doc => {
+        allDocs.forEach(doc => {
           const data = doc.data();
+          let completionDate: Date | null = null;
           if (data.completedAt) {
-            // Get the day of the week (0-6, where 0 is Sunday)
-            const completionDate = data.completedAt.toDate();
-            console.log("Quiz completion date:", completionDate);
-            
-            // Convert to our index (0=Mon, 6=Sun)
-            const dayOfWeek = completionDate.getDay(); // 0=Sun, 1=Mon, etc.
-            const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Convert to 0=Mon, 6=Sun
-            
-            // Increment the count for this day
+            if (typeof data.completedAt.toDate === "function") {
+              completionDate = data.completedAt.toDate();
+            } else if (typeof data.completedAt === "string") {
+              completionDate = new Date(data.completedAt);
+            } else if (data.completedAt instanceof Date) {
+              completionDate = data.completedAt;
+            }
+          }
+          if (
+            completionDate &&
+            completionDate >= startOfWeek &&
+            completionDate <= endOfWeek
+          ) {
+            const dayOfWeek = completionDate.getDay();
+            const dayIndex = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
             weeklyActivity[dayIndex].count += 1;
           }
         });
-        
-        console.log("Weekly activity data:", weeklyActivity);
+        console.log("Weekly activity data (final):", weeklyActivity);
         return weeklyActivity;
-        
       } catch (error) {
         console.error("Error fetching weekly activity data:", error);
         return defaultWeeklyActivity;

@@ -14,6 +14,7 @@ import UserView from "@/pages/admin/UserView";
 import UserEdit from "@/pages/admin/UserEdit";
 import QuizBuilder from "@/pages/admin/QuizBuilder";
 import EditQuiz from "@/pages/admin/EditQuiz";
+import AllQuizzes from "@/pages/admin/AllQuizzes";
 import History from "@/pages/History";
 import Settings from "@/pages/Settings";
 import Quizzes from "@/pages/Quizzes";
@@ -111,6 +112,11 @@ function Router() {
       <Route path="/admin/passages">
         <RequireAdmin>
           <Admin />
+        </RequireAdmin>
+      </Route>
+      <Route path="/admin/quizzes">
+        <RequireAdmin>
+          <AllQuizzes />
         </RequireAdmin>
       </Route>
       <Route path="/admin/passages/:id/edit">

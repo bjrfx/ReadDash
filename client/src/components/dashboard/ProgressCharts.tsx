@@ -26,34 +26,45 @@ export function ProgressCharts({
 }: ProgressChartsProps) {
   // Find max value to calculate relative heights
   const maxActivity = Math.max(...weeklyActivity.map(day => day.count));
-  
+  // Check if all counts are zero
+  const noActivity = weeklyActivity.every(day => day.count === 0);
+
+  // Debug log for troubleshooting
+  console.log('ProgressCharts weeklyActivity:', weeklyActivity);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       {/* Weekly Activity Chart */}
       <Card>
         <CardContent className="p-5">
           <h3 className="font-heading text-lg font-medium mb-4">Weekly Activity</h3>
-          <div className="h-64 flex items-end space-x-2">
-            {weeklyActivity.map((day) => (
-              <div key={day.day} className="flex flex-col items-center flex-1">
-                <div 
-                  className={`w-full ${
+          {noActivity ? (
+            <div className="h-64 flex items-center justify-center text-gray-400 text-base">
+              No activity this week
+            </div>
+          ) : (
+            <div className="h-64 flex items-end space-x-2">
+              {weeklyActivity.map((day) => (
+                <div key={day.day} className="flex flex-col items-center flex-1">
+                  <div 
+                    className={`w-full ${
+                      day.isActive 
+                        ? "bg-primary-500 dark:bg-primary-600" 
+                        : "bg-primary-100 dark:bg-primary-900/20"
+                    } rounded-t-md`} 
+                    style={{ height: `${maxActivity ? (day.count / maxActivity) * 100 : 0}%` }}
+                  />
+                  <span className={`text-xs mt-2 ${
                     day.isActive 
-                      ? "bg-primary-500 dark:bg-primary-600" 
-                      : "bg-primary-100 dark:bg-primary-900/20"
-                  } rounded-t-md`} 
-                  style={{ height: `${maxActivity ? (day.count / maxActivity) * 100 : 0}%` }}
-                />
-                <span className={`text-xs mt-2 ${
-                  day.isActive 
-                    ? "font-medium text-primary-500" 
-                    : "text-gray-500"
-                }`}>
-                  {day.day}
-                </span>
-              </div>
-            ))}
-          </div>
+                      ? "font-medium text-primary-500" 
+                      : "text-gray-500"
+                  }`}>
+                    {day.day}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
       

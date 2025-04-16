@@ -254,6 +254,10 @@ export default function Admin() {
     setLocation('/admin/passages');
   };
   
+  const handleViewAllQuizzes = () => {
+    setLocation('/admin/quizzes');
+  };
+  
   // Generate quiz handler
   const handleGenerateQuiz = async (request: GenerateQuizRequest) => {
     await generateQuizMutation.mutateAsync(request);
@@ -452,6 +456,7 @@ export default function Admin() {
             onDeleteQuiz={handleDeleteQuiz}
             onGenerateQuiz={handleGenerateQuiz}
             onViewAllPassages={handleViewAllPassages}
+            onViewAllQuizzes={handleViewAllQuizzes}
           />
         </div>
       </main>

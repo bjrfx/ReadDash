@@ -108,24 +108,24 @@ export function ContentManagement({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-      {/* Reading Passages List */}
+      {/* Quizzes List */}
       <Card>
         <CardHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-heading text-lg font-medium">Reading Passages</h3>
+          <h3 className="font-heading text-lg font-medium">Quizzes</h3>
         </CardHeader>
         
         <CardContent className="p-5">
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {passages.map((passage) => (
-              <li key={passage.id} className="py-3 flex justify-between items-center">
+            {quizzes.map((quiz) => (
+              <li key={quiz.id} className="py-3 flex justify-between items-center">
                 <div>
-                  <h4 className="font-medium">{passage.title}</h4>
+                  <h4 className="font-medium">{quiz.title}</h4>
                   <div className="flex space-x-2 text-xs mt-1">
-                    <span className="text-gray-500 dark:text-gray-400">Level {passage.level}</span>
+                    <span className="text-gray-500 dark:text-gray-400">Level {quiz.readingLevel}</span>
                     <span className="text-gray-500 dark:text-gray-400">•</span>
-                    <span className="text-gray-500 dark:text-gray-400">{passage.category}</span>
+                    <span className="text-gray-500 dark:text-gray-400">{quiz.category}</span>
                     <span className="text-gray-500 dark:text-gray-400">•</span>
-                    <span className="text-gray-500 dark:text-gray-400">{passage.questionCount} questions</span>
+                    <span className="text-gray-500 dark:text-gray-400">{quiz.questionCount} questions</span>
                   </div>
                 </div>
                 <div className="flex space-x-2">
@@ -133,7 +133,7 @@ export function ContentManagement({
                     variant="ghost" 
                     size="sm"
                     className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                    onClick={() => onEditPassage(passage.id)}
+                    onClick={() => onEditQuiz && onEditQuiz(quiz.id)}
                   >
                     <PencilIcon className="h-4 w-4" />
                   </Button>
@@ -141,7 +141,7 @@ export function ContentManagement({
                     variant="ghost" 
                     size="sm"
                     className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                    onClick={() => onDeletePassage(passage.id)}
+                    onClick={() => onDeleteQuiz && onDeleteQuiz(quiz.id)}
                   >
                     <TrashIcon className="h-4 w-4" />
                   </Button>
@@ -153,9 +153,9 @@ export function ContentManagement({
           <Button 
             variant="outline" 
             className="mt-4 w-full"
-            onClick={onViewAllPassages}
+            onClick={onViewAllQuizzes}
           >
-            View All Passages
+            View All Quizzes
           </Button>
         </CardContent>
       </Card>
@@ -248,58 +248,6 @@ export function ContentManagement({
               {isGenerating ? 'Generating...' : 'Generate Reading & Questions'}
             </Button>
           </form>
-        </CardContent>
-      </Card>
-
-      {/* Quizzes List */}
-      <Card>
-        <CardHeader className="p-5 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-heading text-lg font-medium">Quizzes</h3>
-        </CardHeader>
-        
-        <CardContent className="p-5">
-          <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-            {quizzes.map((quiz) => (
-              <li key={quiz.id} className="py-3 flex justify-between items-center">
-                <div>
-                  <h4 className="font-medium">{quiz.title}</h4>
-                  <div className="flex space-x-2 text-xs mt-1">
-                    <span className="text-gray-500 dark:text-gray-400">Level {quiz.readingLevel}</span>
-                    <span className="text-gray-500 dark:text-gray-400">•</span>
-                    <span className="text-gray-500 dark:text-gray-400">{quiz.category}</span>
-                    <span className="text-gray-500 dark:text-gray-400">•</span>
-                    <span className="text-gray-500 dark:text-gray-400">{quiz.questionCount} questions</span>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-8 w-8 p-0 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
-                    onClick={() => onEditQuiz && onEditQuiz(quiz.id)}
-                  >
-                    <PencilIcon className="h-4 w-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm"
-                    className="h-8 w-8 p-0 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
-                    onClick={() => onDeleteQuiz && onDeleteQuiz(quiz.id)}
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </li>
-            ))}
-          </ul>
-          
-          <Button 
-            variant="outline" 
-            className="mt-4 w-full"
-            onClick={onViewAllQuizzes}
-          >
-            View All Quizzes
-          </Button>
         </CardContent>
       </Card>
     </div>
